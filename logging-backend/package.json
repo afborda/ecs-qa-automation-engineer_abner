@@ -1,0 +1,19 @@
+
+{
+  "name": "sample-logging-backend",
+  "version": "1.2.0",
+  "description": "Sample backend for QA automation challenge (final)",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "seed": "node seed.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "uuid": "^9.0.1",
+    "swagger-ui-express": "^5.0.0",
+    "yamljs": "^0.3.0",
+    "express-rate-limit": "^7.3.0",
+    "jsonwebtoken": "^9.0.2"
+  }
+}

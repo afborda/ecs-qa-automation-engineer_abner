@@ -1,0 +1,25 @@
+
+openapi: 3.0.0
+info:
+  title: Sample Logging Backend API
+  version: 1.2.0
+servers:
+  - url: http://localhost:3000
+paths:
+  /logs:
+    post:
+      summary: Send logs
+      responses:
+        '202': { description: Accepted }
+        '401': { description: Unauthorized }
+  /logs/{correlationId}:
+    get:
+      summary: Get log status
+      responses:
+        '200': { description: OK }
+        '404': { description: Not found }
+  /metrics:
+    get:
+      summary: Metrics
+      responses:
+        '200': { description: OK }

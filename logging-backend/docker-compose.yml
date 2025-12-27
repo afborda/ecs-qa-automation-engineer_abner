@@ -1,0 +1,11 @@
+
+version: "3.9"
+services:
+  backend:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - FAILURE_RATE=0.3
+      - MEMORY_LEAK_MODE=true
+      - SLOW_DEP_MS=200
