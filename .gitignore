@@ -1,0 +1,17 @@
+# Documentation and AI instructions
+.github/copilot-instructions.md
+doc/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment files
+.env
+.env.local
