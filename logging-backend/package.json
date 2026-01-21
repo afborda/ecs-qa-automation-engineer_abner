@@ -5,7 +5,27 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "seed": "node seed.js"
+    "seed": "node seed.js",
+    "test": "jest --maxWorkers=100%",
+    "test:fast": "jest --maxWorkers=100% --maxConcurrency=20 --silent",
+    "test:unit": "jest --testPathPatterns=unit --maxWorkers=100%",
+    "test:integration": "jest --testPathPatterns=integration --maxWorkers=50%",
+    "test:integration:leaks": "jest --testPathPatterns=integration --detectOpenHandles --runInBand",
+    "test:watch": "jest --watch --maxWorkers=25%",
+    "test:coverage": "jest --coverage --maxWorkers=75%",
+    "test:e2e:local": "jest --testPathPatterns=e2e/local --runInBand --json --outputFile=__tests__/e2e/reports/local/e2e-local-report.json",
+    "test:e2e:local:save": "npm run test:e2e:local && node ../scripts/save-test-report.js __tests__/e2e/reports/local/e2e-local-report.json local",
+    "test:e2e:remote": "jest --testPathPatterns=e2e/remote --runInBand --json --outputFile=__tests__/e2e/reports/remote/e2e-remote-report.json",
+    "test:e2e:remote:save": "npm run test:e2e:remote && node ../scripts/save-test-report.js __tests__/e2e/reports/remote/e2e-remote-report.json remote",
+    "test:e2e:compare:remote": "node ../scripts/compare-reports.js remote",
+    "test:e2e:compare:local": "node ../scripts/compare-reports.js local",
+    "test:e2e:all": "npm run test:e2e:local && npm run test:e2e:remote",
+    "test:debug": "node --inspect-brk node_modules/.bin/jest --runInBand",
+    "perf:local": "mkdir -p ../perf/reports/local && artillery run ../perf/artillery-local.yml --output ../perf/reports/local/report-local.json && ts=$(date +%Y%m%d-%H%M%S) && cp ../perf/reports/local/report-local.json ../perf/reports/local/report-local-$ts.json",
+    "perf:remote": "mkdir -p ../perf/reports/remote && artillery run ../perf/artillery-remote.yml --output ../perf/reports/remote/report-remote.json && ts=$(date +%Y%m%d-%H%M%S) && cp ../perf/reports/remote/report-remote.json ../perf/reports/remote/report-remote-$ts.json",
+    "perf:compare": "echo 'Local vs Remote Stress Test Comparison' && artillery report ../perf/reports/local/report-local.json --output ../perf/reports/local/report-local.html && artillery report ../perf/reports/remote/report-remote.json --output ../perf/reports/remote/report-remote.html",
+    "perf:report": "node ../scripts/perf-report.js",
+    "test:ci": "jest --maxWorkers=100% --coverage --ci --forceExit"
   },
   "dependencies": {
     "axios": "^1.13.2",
@@ -15,5 +35,11 @@
     "swagger-ui-express": "^5.0.0",
     "uuid": "^9.0.1",
     "yamljs": "^0.3.0"
+  },
+  "devDependencies": {
+    "artillery": "^2.0.27",
+    "jest": "^30.2.0",
+    "jest-mock-extended": "^4.0.0",
+    "supertest": "^7.2.2"
   }
 }

@@ -1,0 +1,5 @@
+# Ignorar todos os arquivos JSON de relatórios
+*.json
+
+# Manter estrutura de pastas
+!.gitkeep

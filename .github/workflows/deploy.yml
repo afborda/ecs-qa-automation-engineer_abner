@@ -1,12 +1,14 @@
-name: Build and Deploy
+name: Deploy
 
 on:
-  push:
-    branches:
-      - main
+  workflow_run:
+    workflows: ["CI Tests"]
+    types: [completed]
+    branches: [main]
 
 jobs:
   deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -27,10 +29,12 @@ jobs:
         with:
           context: ./logging-backend
           push: true
-          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/logging-api:latest
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/logging-api:latest
+            ${{ secrets.DOCKER_HUB_USERNAME }}/logging-api:${{ github.sha }}
 
       - name: Deploy to VPS
-        uses: appleboy/ssh-action@master
+        uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.VPS_DEPLOY_HOST }}
           port: ${{ secrets.VPS_DEPLOY_PORT }}
@@ -40,4 +44,37 @@ jobs:
             cd ~/Estudos/SAP
             docker-compose pull
             docker-compose up -d
-            echo "✅ Deploy concluído!"
+
+      - name: Notify Discord - Deploy Success
+        if: success()
+        run: |
+          curl -X POST "${{ secrets.DISCORD_WEBHOOK }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "embeds": [{
+                "title": "🚀 Deploy Successful",
+                "description": "**Repository:** ${{ github.repository }}\n**Image:** `logging-api:${{ github.sha }}`\n**Target:** abnerfonseca.com.br/api",
+                "color": 3066993,
+                "fields": [
+                  {"name": "Docker Tag", "value": "`latest`", "inline": true},
+                  {"name": "Commit", "value": "`${{ github.sha }}`", "inline": true}
+                ],
+                "footer": {"text": "GitHub Actions - Deploy"},
+                "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"
+              }]
+            }'
+
+      - name: Notify Discord - Deploy Failed
+        if: failure()
+        run: |
+          curl -X POST "${{ secrets.DISCORD_WEBHOOK }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "embeds": [{
+                "title": "❌ Deploy Failed",
+                "description": "**Repository:** ${{ github.repository }}\n**Commit:** `${{ github.sha }}`\n**Check logs:** [Actions](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})",
+                "color": 15158332,
+                "footer": {"text": "GitHub Actions - Deploy"},
+                "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"
+              }]
+            }'

@@ -15,3 +15,8 @@ Thumbs.db
 # Environment files
 .env
 .env.local
+
+# Performance reports
+perf/reports/
+perf/report-*.json
+perf/*.json

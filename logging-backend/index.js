@@ -106,6 +106,12 @@ app.post('/auth/token', (req, res) => {
   res.json({ token });
 });
 
-app.listen(3000, () => {
-  console.log('Sample logging backend running on port 3000');
-});
+// Exportar app para testes
+module.exports = app;
+
+// Só inicia servidor se não for em modo de teste
+if (require.main === module) {
+  app.listen(3000, () => {
+    console.log('Sample logging backend running on port 3000');
+  });
+}

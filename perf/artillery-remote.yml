@@ -1,0 +1,85 @@
+config:
+  target: "https://abnerfonseca.com.br/api"
+  phases:
+    - duration: 10
+      arrivalRate: 1
+      name: "Warmup"
+
+    - duration: 30
+      arrivalRate: 3
+      name: "Steady"
+
+    - duration: 20
+      arrivalRate: 5
+      name: "Stress"
+
+    - duration: 10
+      arrivalRate: 1
+      name: "Cooldown"
+
+  plugins:
+    metrics-by-endpoint: {}
+
+  defaults:
+    headers:
+      Content-Type: application/json
+
+  ensure:
+    thresholds:
+      - http.response_time.p50: 300
+      - http.response_time.p95: 1500
+      - http.response_time.p99: 3000
+
+scenarios:
+  - name: "Full Workflow"
+    weight: 65
+    flow:
+      - post:
+          url: "/auth/token"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+          expect:
+            - statusCode: 200
+
+      - think: 2
+
+      - post:
+          url: "/logs"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          json:
+            message: "Remote perf test {{ $timestamp }}"
+          expect:
+            - statusCode: 202
+          capture:
+            - json: "$.correlationId"
+              as: "correlationId"
+
+      - get:
+          url: "/logs/{{ correlationId }}"
+          expect:
+            - statusCode: 200
+
+      - think: 1
+
+      - get:
+          url: "/metrics"
+          expect:
+            - statusCode: 200
+
+  - name: "Token Generation Only"
+    weight: 20
+    flow:
+      - post:
+          url: "/auth/token"
+          expect:
+            - statusCode: 200
+
+  - name: "Metrics Polling"
+    weight: 15
+    flow:
+      - get:
+          url: "/metrics"
+          expect:
+            - statusCode: 200
