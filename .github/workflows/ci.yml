@@ -34,6 +34,11 @@ jobs:
           cd logging-backend
           npm ci
 
+      - name: Run Lint
+        run: |
+          cd logging-backend
+          npm run lint
+
       - name: Run Unit Tests
         run: |
           cd logging-backend

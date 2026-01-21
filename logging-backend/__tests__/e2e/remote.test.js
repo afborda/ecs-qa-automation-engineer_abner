@@ -29,12 +29,10 @@ describe('E2E Tests - Remote API', () => {
 
       const deadline = Date.now() + 15000;
       let status = 'QUEUED';
-      let attempts = 0;
       while (Date.now() < deadline) {
         const pollRes = await client.get(`/logs/${correlationId}`);
         expect(pollRes.status).toBe(200);
         status = pollRes.data.status;
-        attempts++;
 
         if (status !== 'QUEUED') break;
         await new Promise(r => setTimeout(r, 1000 + Math.random() * 500));

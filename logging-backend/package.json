@@ -6,6 +6,8 @@
   "scripts": {
     "start": "node index.js",
     "seed": "node seed.js",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "test": "jest --maxWorkers=100%",
     "test:fast": "jest --maxWorkers=100% --maxConcurrency=20 --silent",
     "test:unit": "jest --testPathPatterns=unit --maxWorkers=100%",
@@ -37,7 +39,9 @@
     "yamljs": "^0.3.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.2",
     "artillery": "^2.0.27",
+    "eslint": "^9.39.2",
     "jest": "^30.2.0",
     "jest-mock-extended": "^4.0.0",
     "supertest": "^7.2.2"

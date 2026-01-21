@@ -1,11 +1,10 @@
 const request = require('supertest');
 const {
   setupIntegrationAuth,
-  mockValidUser,
   jwt
 } = require('../helpers/authMocks');
 const { TOKENS, MESSAGES, LOG_STATUSES } = require('../fixtures/testData');
-const { waitForLogProcessing, createLog, getMetrics } = require('../helpers/testUtils');
+const { createLog } = require('../helpers/testUtils');
 
 const app = require('../../index');
 
@@ -80,7 +79,7 @@ describe('Async Worker - Log Processing', () => {
       for (let i = 0; i < 20; i++) {
         const res = await request(app)
           .post('/logs')
-          .set('Authorization', `Bearer token`)
+          .set('Authorization', 'Bearer token')
           .send({ message: `log ${i}` });
 
         correlationIds.push(res.body.correlationId);
@@ -110,7 +109,7 @@ describe('Async Worker - Log Processing', () => {
 
       const res = await request(app)
         .post('/logs')
-        .set('Authorization', `Bearer token`)
+        .set('Authorization', 'Bearer token')
         .send({ message: largeMessage });
 
       const { correlationId } = res.body;
@@ -135,12 +134,12 @@ describe('Async Worker - Log Processing', () => {
     it('should update metrics when processing logs', async () => {
       jwt.verify.mockReturnValue({ user: 'qa' });
 
-      const initialRes = await request(app)
+      await request(app)
         .get('/metrics');
 
-      const postRes = await request(app)
+      await request(app)
         .post('/logs')
-        .set('Authorization', `Bearer token`)
+        .set('Authorization', 'Bearer token')
         .send({ message: 'test' });
 
       const queuedRes = await request(app)
