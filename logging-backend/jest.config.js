@@ -30,7 +30,7 @@ module.exports = {
     'index.js',
   ],
   coverageDirectory: 'coverage',
-  coverageReporters: ['text', 'html', 'lcov'],
+  coverageReporters: ['text', 'html', 'lcov', 'json-summary'],
 
   // Thresholds (será mais flexível no começo)
   coverageThreshold: {

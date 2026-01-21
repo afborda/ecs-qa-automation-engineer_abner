@@ -49,6 +49,26 @@ jobs:
           cd logging-backend
           npm run test:ci
 
+      - name: Extract Coverage
+        id: coverage
+        run: |
+          COVERAGE_FILE="logging-backend/coverage/coverage-summary.json"
+          if [ -f "$COVERAGE_FILE" ]; then
+            LINES=$(cat $COVERAGE_FILE | jq '.total.lines.pct')
+            STATEMENTS=$(cat $COVERAGE_FILE | jq '.total.statements.pct')
+            FUNCTIONS=$(cat $COVERAGE_FILE | jq '.total.functions.pct')
+            BRANCHES=$(cat $COVERAGE_FILE | jq '.total.branches.pct')
+            echo "lines=$LINES" >> $GITHUB_OUTPUT
+            echo "statements=$STATEMENTS" >> $GITHUB_OUTPUT
+            echo "functions=$FUNCTIONS" >> $GITHUB_OUTPUT
+            echo "branches=$BRANCHES" >> $GITHUB_OUTPUT
+          else
+            echo "lines=0" >> $GITHUB_OUTPUT
+            echo "statements=0" >> $GITHUB_OUTPUT
+            echo "functions=0" >> $GITHUB_OUTPUT
+            echo "branches=0" >> $GITHUB_OUTPUT
+          fi
+
       - name: Upload Coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
@@ -59,12 +79,18 @@ jobs:
         if: always()
         run: |
           if [ "${{ job.status }}" == "success" ]; then
-            STATUS="✅ PASSED"
+            STATUS="PASSED"
             COLOR=3066993
           else
-            STATUS="❌ FAILED"
+            STATUS="FAILED"
             COLOR=15158332
           fi
+
+          LINES="${{ steps.coverage.outputs.lines }}"
+          STATEMENTS="${{ steps.coverage.outputs.statements }}"
+          FUNCTIONS="${{ steps.coverage.outputs.functions }}"
+          BRANCHES="${{ steps.coverage.outputs.branches }}"
+
           curl -X POST "${{ secrets.DISCORD_WEBHOOK }}" \
             -H "Content-Type: application/json" \
             -d '{
@@ -72,6 +98,12 @@ jobs:
                 "title": "'"$STATUS"' - CI Tests",
                 "description": "**Repository:** ${{ github.repository }}\n**Branch:** ${{ github.ref_name }}\n**Commit:** `${{ github.sha }}`",
                 "color": '"$COLOR"',
+                "fields": [
+                  {"name": "Lines", "value": "'"$LINES"'%", "inline": true},
+                  {"name": "Statements", "value": "'"$STATEMENTS"'%", "inline": true},
+                  {"name": "Functions", "value": "'"$FUNCTIONS"'%", "inline": true},
+                  {"name": "Branches", "value": "'"$BRANCHES"'%", "inline": true}
+                ],
                 "footer": {"text": "GitHub Actions"},
                 "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"
               }]
