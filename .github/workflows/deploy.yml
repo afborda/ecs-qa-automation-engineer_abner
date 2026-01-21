@@ -5,12 +5,14 @@ on:
     workflows: ["CI Tests"]
     types: [completed]
     branches: [main]
-  workflow_dispatch:  # Manual trigger
+  workflow_dispatch: # Manual trigger
 
 jobs:
   deploy:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
+    env:
+      DOCKER_USER: ${{ secrets.DOCKER_HUB_USERNAME }}
 
     steps:
       - name: Checkout code
@@ -31,8 +33,8 @@ jobs:
           context: ./logging-backend
           push: true
           tags: |
-            ${{ secrets.DOCKER_HUB_USERNAME }}/logging-api:latest
-            ${{ secrets.DOCKER_HUB_USERNAME }}/logging-api:${{ github.sha }}
+            ${{ env.DOCKER_USER }}/logging-api:latest
+            ${{ env.DOCKER_USER }}/logging-api:${{ github.sha }}
 
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.0.0
@@ -41,13 +43,14 @@ jobs:
           port: ${{ secrets.VPS_DEPLOY_PORT }}
           username: deploy
           key: ${{ secrets.VPS_DEPLOY_KEY }}
+          envs: DOCKER_USER
           script: |
             cd ~/Estudos/SAP
 
-            # Ensure docker-compose.yml uses remote image
-            if ! grep -q "image: afborda/logging-api" docker-compose.yml 2>/dev/null; then
-              echo "Fixing docker-compose.yml to use remote image..."
-              cat > docker-compose.yml << 'EOF'
+            echo "Using Docker image: $DOCKER_USER/logging-api:latest"
+
+            # Always refresh docker-compose.yml with the pushed image
+            cat > docker-compose.yml << 'COMPOSE'
             version: "3.9"
             services:
               backend:
@@ -59,18 +62,17 @@ jobs:
                   - SLOW_DEP_MS=200
                   - RATE_LIMIT=100
                 restart: unless-stopped
-            EOF
-            fi
-            
+            COMPOSE
+
             # Force remove old container
             docker stop logging-api 2>/dev/null || true
             docker rm logging-api 2>/dev/null || true
-            
+
             # Pull and start new container
             docker pull afborda/logging-api:latest
-            docker-compose up -d --remove-orphans
+            docker-compose up -d --force-recreate --remove-orphans
             docker image prune -f
-            
+
             echo "Deploy completed. Container status:"
             docker ps | grep logging-api
 
