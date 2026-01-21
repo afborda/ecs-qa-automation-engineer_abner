@@ -42,8 +42,32 @@ jobs:
           key: ${{ secrets.VPS_DEPLOY_KEY }}
           script: |
             cd ~/Estudos/SAP
-            docker-compose pull
+            
+            # Ensure docker-compose.yml uses remote image
+            if ! grep -q "image: afborda/logging-api" docker-compose.yml 2>/dev/null; then
+              echo "Fixing docker-compose.yml to use remote image..."
+              cat > docker-compose.yml << 'EOF'
+            version: "3.9"
+            services:
+              backend:
+                image: afborda/logging-api:latest
+                container_name: logging-api
+                ports:
+                  - "3000:3000"
+                environment:
+                  - SLOW_DEP_MS=200
+                  - RATE_LIMIT=100
+                restart: unless-stopped
+            EOF
+            fi
+            
+            docker-compose down
+            docker pull afborda/logging-api:latest
             docker-compose up -d
+            docker image prune -f
+            
+            echo "Deploy completed. Container status:"
+            docker ps | grep logging-api
 
       - name: Notify Discord - Deploy Success
         if: success()
