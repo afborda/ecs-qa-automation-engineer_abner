@@ -47,32 +47,20 @@ jobs:
           script: |
             cd ~/Estudos/SAP
 
-            echo "🛑 Parando container..."
-            docker stop logging-api 2>/dev/null || true
+            echo "🛑 Parando stack..."
+            docker-compose down || true
 
-            echo "🗑️ Removendo container..."
-            docker rm logging-api 2>/dev/null || true
+            echo "⬇️ Pull da imagem nova..."
+            docker pull ${DOCKER_USER}/logging-api:latest
 
-            echo "🗑️ Removendo imagem antiga..."
-            docker rmi afborda/logging-api:latest 2>/dev/null || true
+            echo "🚀 Subindo com compose (Traefik + trust proxy)..."
+            docker-compose up -d --force-recreate --remove-orphans
 
-            echo "⬇️ Baixando imagem nova..."
-            docker pull afborda/logging-api:latest
-
-            echo "🚀 Iniciando container..."
-            docker run -d \
-              --name logging-api \
-              --restart unless-stopped \
-              -p 3000:3000 \
-              -e SLOW_DEP_MS=200 \
-              -e RATE_LIMIT=100 \
-              afborda/logging-api:latest
-
-            echo "🧹 Limpando cache Docker..."
+            echo "🧹 Limpando imagens antigas..."
             docker image prune -f
 
-            echo "✅ Deploy concluído. Status:"
-            docker ps | grep logging-api
+            echo "✅ Status:"
+            docker-compose ps
 
       - name: Notify Discord - Deploy Success
         if: success()
