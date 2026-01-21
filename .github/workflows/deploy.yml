@@ -5,6 +5,7 @@ on:
     workflows: ["CI Tests"]
     types: [completed]
     branches: [main]
+  workflow_dispatch:  # Manual trigger
 
 jobs:
   deploy:
@@ -42,7 +43,7 @@ jobs:
           key: ${{ secrets.VPS_DEPLOY_KEY }}
           script: |
             cd ~/Estudos/SAP
-            
+
             # Ensure docker-compose.yml uses remote image
             if ! grep -q "image: afborda/logging-api" docker-compose.yml 2>/dev/null; then
               echo "Fixing docker-compose.yml to use remote image..."
@@ -61,9 +62,13 @@ jobs:
             EOF
             fi
             
-            docker-compose down
+            # Force remove old container
+            docker stop logging-api 2>/dev/null || true
+            docker rm logging-api 2>/dev/null || true
+            
+            # Pull and start new container
             docker pull afborda/logging-api:latest
-            docker-compose up -d
+            docker-compose up -d --remove-orphans
             docker image prune -f
             
             echo "Deploy completed. Container status:"

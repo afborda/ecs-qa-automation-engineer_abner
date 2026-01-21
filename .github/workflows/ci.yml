@@ -11,7 +11,7 @@ env:
 
 jobs:
   test:
-    name: Tests (Node ${{ matrix.node-version }})
+    name: Tests e lint (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
 
     strategy:
