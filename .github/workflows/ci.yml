@@ -140,6 +140,9 @@ jobs:
       - name: Install Artillery
         run: npm install -g artillery
 
+      - name: Create reports directory
+        run: mkdir -p perf/reports/local
+
       - name: Start Backend
         run: |
           cd logging-backend
