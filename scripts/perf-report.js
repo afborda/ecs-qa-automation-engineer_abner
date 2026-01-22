@@ -128,8 +128,8 @@ function sendToDiscord(localData, remoteData, { prevLocal, prevRemote }) {
       fields.push({
         name: 'LOCAL (localhost:3000)',
         value: [
-          `**p95:** ${local.p95.toFixed(1)}ms | **Status:** ${localStatus}`,
-          `**Requests:** ${local.totalRequests} | **Success:** ${local.successPct.toFixed(1)}% | **Fail:** ${local.failPct.toFixed(1)}% | **429:** ${local.rate429Pct.toFixed(1)}%`
+            `🚦 **Status:** ${localStatus} | p50: ${local.p50.toFixed(1)}ms | p95: ${local.p95.toFixed(1)}ms | p99: ${local.p99.toFixed(1)}ms`,
+            `📈 Requests: ${local.totalRequests} | ✅ Success: ${local.successPct.toFixed(1)}% | ⚠️ Fail: ${local.failPct.toFixed(1)}% | 🚫 429: ${local.rate429Pct.toFixed(1)}%`
         ].join('\n'),
         inline: false,
       });
@@ -151,11 +151,16 @@ function sendToDiscord(localData, remoteData, { prevLocal, prevRemote }) {
     }
 
     if (remote) {
+        fields.unshift({
+          name: 'Summary',
+          value: `🎯 Target: abnerfonseca.com.br/api | 🛠️ Tool: Artillery | 🎚️ Thresholds: P50 300ms | P95 1500ms | P99 3000ms`,
+          inline: false,
+        });
       fields.push({
         name: 'REMOTE (abnerfonseca.com.br)',
         value: [
-          `**p95:** ${remote.p95.toFixed(1)}ms | **Status:** ${remoteStatus}`,
-          `**Requests:** ${remote.totalRequests} | **Success:** ${remote.successPct.toFixed(1)}% | **Fail:** ${remote.failPct.toFixed(1)}% | **429:** ${remote.rate429Pct.toFixed(1)}%`
+            `🚦 **Status:** ${remoteStatus} | p50: ${remote.p50.toFixed(1)}ms | p95: ${remote.p95.toFixed(1)}ms | p99: ${remote.p99.toFixed(1)}ms`,
+            `📈 Requests: ${remote.totalRequests} | ✅ Success: ${remote.successPct.toFixed(1)}% | ⚠️ Fail: ${remote.failPct.toFixed(1)}% | 🚫 429: ${remote.rate429Pct.toFixed(1)}%`
         ].join('\n'),
         inline: false,
       });
@@ -165,8 +170,8 @@ function sendToDiscord(localData, remoteData, { prevLocal, prevRemote }) {
       fields.push({
         name: 'Details',
         value: [
-          local ? `Local: responses=${local.responses} | 2xx=${local.ok2xx} | fail=${local.failCount} | timeouts=${local.errorsTimeout}` : '',
-          remote ? `Remote: responses=${remote.responses} | 2xx=${remote.ok2xx} | fail=${remote.failCount} | timeouts=${remote.errorsTimeout}` : '',
+          local ? `📊 Local: responses=${local.responses} | 2xx=${local.ok2xx} | fail=${local.failCount} | timeouts=${local.errorsTimeout}` : '',
+          remote ? `🌐 Remote: responses=${remote.responses} | 2xx=${remote.ok2xx} | fail=${remote.failCount} | timeouts=${remote.errorsTimeout}` : '',
         ].filter(Boolean).join('\n'),
         inline: false,
       });
