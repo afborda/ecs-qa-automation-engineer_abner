@@ -30,23 +30,28 @@ function generateReport(name, data) {
   const summaries = agg.summaries || {};
   const http_rt = summaries['http.response_time'] || {};
 
+  // Basic tallies
   const totalRequests = counters['http.requests'] || 0;
-  const ok = (counters['http.codes.200'] || 0) + (counters['http.codes.202'] || 0);
+  const totalResponses = counters['http.responses'] || totalRequests;
+  const ok2xx = (counters['http.codes.200'] || 0) + (counters['http.codes.201'] || 0) + (counters['http.codes.202'] || 0);
   const code429 = counters['http.codes.429'] || 0;
+  const errorsTimeout = counters['errors.ETIMEDOUT'] || 0;
   const vusersCompleted = counters['vusers.completed'] || 0;
   const vusersCreated = counters['vusers.created'] || 0;
 
-  const successPct = totalRequests ? ((ok / totalRequests) * 100) : 0;
-  const rate429Pct = totalRequests ? ((code429 / totalRequests) * 100) : 0;
+  const successPct = totalResponses ? ((ok2xx / totalResponses) * 100) : 0;
+  const failCount = Math.max(0, totalResponses - ok2xx);
+  const failPct = totalResponses ? ((failCount / totalResponses) * 100) : 0;
+  const rate429Pct = totalResponses ? ((code429 / totalResponses) * 100) : 0;
 
   console.log(`\n${'='.repeat(60)}`);
   console.log(`${name}`);
   console.log(`${'='.repeat(60)}\n`);
 
   console.log(`Latency: p95 ${formatMs(http_rt.p95 || 0)} | p99 ${formatMs(http_rt.p99 || 0)}`);
-  console.log(`Success: ${successPct.toFixed(1)}% | 429: ${rate429Pct.toFixed(1)}%`);
-  console.log(`Requests: ${totalRequests} | VUs: ${vusersCompleted}/${vusersCreated}`);
-  console.log(`Codes: 200+202=${ok}, 429=${code429}\n`);
+  console.log(`Success: ${successPct.toFixed(1)}% | Fail: ${failPct.toFixed(1)}% | 429: ${rate429Pct.toFixed(1)}%`);
+  console.log(`Requests: ${totalRequests} | Responses: ${totalResponses} | VUs: ${vusersCompleted}/${vusersCreated}`);
+  console.log(`Codes: 2xx=${ok2xx}, 429=${code429} | Timeouts: ${errorsTimeout}\n`);
 }
 
 function getSummary(data) {
@@ -55,6 +60,10 @@ function getSummary(data) {
   const counters = agg.counters || {};
   const summaries = agg.summaries || {};
   const rt = summaries['http.response_time'] || {};
+  const responses = counters['http.responses'] || counters['http.requests'] || 0;
+  const ok2xx = (counters['http.codes.200'] || 0) + (counters['http.codes.201'] || 0) + (counters['http.codes.202'] || 0);
+  const code429 = counters['http.codes.429'] || 0;
+  const failCount = Math.max(0, responses - ok2xx);
   return {
     p50: rt.p50 || 0,
     p95: rt.p95 || 0,
@@ -63,6 +72,13 @@ function getSummary(data) {
     ok200: counters['http.codes.200'] || 0,
     ok202: counters['http.codes.202'] || 0,
     code429: counters['http.codes.429'] || 0,
+    responses,
+    ok2xx,
+    failCount,
+    successPct: responses ? (ok2xx / responses) * 100 : 0,
+    failPct: responses ? (failCount / responses) * 100 : 0,
+    rate429Pct: responses ? (code429 / responses) * 100 : 0,
+    errorsTimeout: counters['errors.ETIMEDOUT'] || 0,
   };
 }
 
@@ -111,7 +127,10 @@ function sendToDiscord(localData, remoteData, { prevLocal, prevRemote }) {
     if (local) {
       fields.push({
         name: 'LOCAL (localhost:3000)',
-        value: `**p95:** ${local.p95.toFixed(1)}ms | **Status:** ${localStatus}`,
+        value: [
+          `**p95:** ${local.p95.toFixed(1)}ms | **Status:** ${localStatus}`,
+          `**Requests:** ${local.totalRequests} | **Success:** ${local.successPct.toFixed(1)}% | **Fail:** ${local.failPct.toFixed(1)}% | **429:** ${local.rate429Pct.toFixed(1)}%`
+        ].join('\n'),
         inline: false,
       });
     }
@@ -134,19 +153,20 @@ function sendToDiscord(localData, remoteData, { prevLocal, prevRemote }) {
     if (remote) {
       fields.push({
         name: 'REMOTE (abnerfonseca.com.br)',
-        value: `**p95:** ${remote.p95.toFixed(1)}ms | **Status:** ${remoteStatus}`,
+        value: [
+          `**p95:** ${remote.p95.toFixed(1)}ms | **Status:** ${remoteStatus}`,
+          `**Requests:** ${remote.totalRequests} | **Success:** ${remote.successPct.toFixed(1)}% | **Fail:** ${remote.failPct.toFixed(1)}% | **429:** ${remote.rate429Pct.toFixed(1)}%`
+        ].join('\n'),
         inline: false,
       });
     }
 
     if (local || remote) {
-      const rate429Local = local && local.totalRequests ? ((local.code429 / local.totalRequests) * 100) : 0;
-      const rate429Remote = remote && remote.totalRequests ? ((remote.code429 / remote.totalRequests) * 100) : 0;
       fields.push({
         name: 'Details',
         value: [
-          local ? `Local: ${local.totalRequests} reqs | 429: ${rate429Local.toFixed(0)}%` : '',
-          remote ? `Remote: ${remote.totalRequests} reqs | 429: ${rate429Remote.toFixed(0)}%` : '',
+          local ? `Local: responses=${local.responses} | 2xx=${local.ok2xx} | fail=${local.failCount} | timeouts=${local.errorsTimeout}` : '',
+          remote ? `Remote: responses=${remote.responses} | 2xx=${remote.ok2xx} | fail=${remote.failCount} | timeouts=${remote.errorsTimeout}` : '',
         ].filter(Boolean).join('\n'),
         inline: false,
       });
@@ -159,10 +179,10 @@ function sendToDiscord(localData, remoteData, { prevLocal, prevRemote }) {
       fields,
     };
 
-    const payload = {
-      username: 'QA Perf Bot',
-      embeds: [embed],
-    };
+      const payload = {
+        username: 'QA Performance Bot',
+        embeds: [embed],
+      };
 
     const url = new URL(DISCORD_WEBHOOK_URL);
     const postData = JSON.stringify(payload);
