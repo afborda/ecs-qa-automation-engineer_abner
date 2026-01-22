@@ -45,6 +45,8 @@ function auth(req, res, next) {
   }
 }
 
+// Desabilitar worker em testes para evitar memory leaks
+if (process.env.DISABLE_WORKER !== 'true') {
 // Async worker
 setInterval(() => {
   if (queue.length > 0) {
@@ -75,6 +77,9 @@ setInterval(() => {
     processedCount++;
   }
 }, 1000);
+} else {
+  console.log('⚠️  Worker disabled (DISABLE_WORKER=true) - logs will not be processed automatically');
+}
 
 app.post('/logs', auth, (req, res) => {
   const correlationId = uuidv4();

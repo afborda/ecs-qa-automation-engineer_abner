@@ -1,12 +1,12 @@
-const request = require('supertest');
 const {
   mockValidJWTSign,
   mockValidUser,
   mockExpiredToken,
   mockInvalidToken,
   setupIntegrationAuth,
-  jwt
-} = require('../helpers/authMocks');
+  jwt,
+  request
+} = require('../helpers/mockHelpers');
 const { VALID_UUIDS, TOKENS, MESSAGES } = require('../fixtures/testData');
 const { expectErrorResponse } = require('../helpers/testUtils');
 

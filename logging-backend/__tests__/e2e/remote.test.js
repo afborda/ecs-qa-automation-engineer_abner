@@ -1,6 +1,5 @@
-const axios = require('axios');
 const { VALID_UUIDS, MESSAGES } = require('../fixtures/testData');
-
+const {axios} = require('../helpers/mockHelpers');
 const baseURL = process.env.API_BASE || 'https://abnerfonseca.com.br/api';
 const client = axios.create({ baseURL, timeout: 10000, validateStatus: () => true });
 

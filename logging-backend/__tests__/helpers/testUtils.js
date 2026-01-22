@@ -1,4 +1,4 @@
-const request = require('supertest');
+const {request} = require('../helpers/mockHelpers');
 const app = require('../../index');
 
 const createLog = async (message = 'test log', token = 'valid.token') => {

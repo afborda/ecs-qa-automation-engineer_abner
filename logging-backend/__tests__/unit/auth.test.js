@@ -5,7 +5,7 @@ const {
   mockTokenDecode,
   mockInvalidDecode,
   jwt
-} = require('../helpers/authMocks');
+} = require('../helpers/mockHelpers');
 
 const { TOKENS, TEST_USERS } = require('../fixtures/testData');
 

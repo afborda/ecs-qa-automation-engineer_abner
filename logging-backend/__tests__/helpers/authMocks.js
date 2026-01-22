@@ -1,4 +1,4 @@
-const jwt = require('jsonwebtoken');
+const {jwt} = require('../helpers/mockHelpers');
 
 const mockValidUser = () => {
   jwt.verify.mockReturnValue({ user: 'qa' });
@@ -41,5 +41,5 @@ module.exports = {
   mockTokenDecode,
   mockInvalidDecode,
   setupIntegrationAuth,
-  jwt
+
 };

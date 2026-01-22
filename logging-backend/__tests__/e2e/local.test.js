@@ -1,6 +1,15 @@
-jest.unmock('jsonwebtoken');
+/**
+ * E2E Tests - Local Environment
+ *
+ * ⚠️ ATENÇÃO: Habilitar worker para testar fluxo completo
+ */
 
-const request = require('supertest');
+// Habilitar worker antes de importar app
+process.env.ENABLE_WORKER_FOR_TESTS = 'true';
+delete process.env.DISABLE_WORKER;
+
+jest.unmock('jsonwebtoken');
+const {request} = require('../helpers/mockHelpers');
 const app = require('../../index');
 
 const MESSAGES = {
@@ -157,7 +166,7 @@ describe('E2E Tests - Local Environment', () => {
       expect(uniqueIds.size).toBe(5);
     });
 
-    it('should respect rate limit of 100 requests per minute', async () => {
+    it('should respect rate limit (configured limit per minute)', async () => {
       const tokenRes = await request(app)
         .post('/auth/token')
         .send({})
@@ -165,7 +174,11 @@ describe('E2E Tests - Local Environment', () => {
 
       const token = tokenRes.body.token;
 
-      const promises = Array(101).fill(null).map(() =>
+      // Rate limit configurado via env (pode ser 100 ou 500)
+      const rateLimit = parseInt(process.env.RATE_LIMIT || '100');
+      const requestCount = rateLimit + 10; // 10 acima do limite
+
+      const promises = Array(requestCount).fill(null).map(() =>
         request(app)
           .post('/logs')
           .set('Authorization', `Bearer ${token}`)
@@ -176,7 +189,7 @@ describe('E2E Tests - Local Environment', () => {
 
       const blockedRequests = results.filter(r => r.status === 429);
       expect(blockedRequests.length).toBeGreaterThan(0);
-    }, 15000);
+    }, 20000);
   });
 
   describe('Token Expiration', () => {

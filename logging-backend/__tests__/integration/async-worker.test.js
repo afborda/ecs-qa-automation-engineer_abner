@@ -1,11 +1,23 @@
-const request = require('supertest');
+/**
+ * Integration Tests: Async Worker
+ *
+ * ⚠️ ATENÇÃO: Import de setup-worker DEVE vir PRIMEIRO!
+ * Este setup habilita o worker antes de index.js ser carregado.
+ */
+
+// CRÍTICO: Importar setup PRIMEIRO
+require('./setup-worker');
+
 const {
   setupIntegrationAuth,
-  jwt
-} = require('../helpers/authMocks');
+  jwt,
+  request
+} = require('../helpers/mockHelpers');
 const { TOKENS, MESSAGES, LOG_STATUSES } = require('../fixtures/testData');
 const { createLog } = require('../helpers/testUtils');
+const { pollWithFixedDelay } = require('../helpers/pollingHelpers');
 
+// Agora importar app com worker ativo
 const app = require('../../index');
 
 describe('Async Worker - Log Processing', () => {
@@ -27,21 +39,27 @@ describe('Async Worker - Log Processing', () => {
 
       const correlationId = await createLog(MESSAGES.simple, TOKENS.valid);
 
-      let status = 'QUEUED';
-      let attempts = 0;
-      const maxAttempts = 30;
+      // Use polling helper com retry inteligente
+      const result = await pollWithFixedDelay(
+        async () => {
+          const res = await request(app).get(`/logs/${correlationId}`);
 
-      while (status === 'QUEUED' && attempts < maxAttempts) {
-        await new Promise(resolve => setTimeout(resolve, 100));
+          // Se não temos status, falha para tentar novamente
+          if (!res.body.status) {
+            throw new Error('No status in response');
+          }
 
-        const res = await request(app)
-          .get(`/logs/${correlationId}`);
+          // Se ainda está QUEUED, falha para tentar novamente
+          if (res.body.status === 'QUEUED') {
+            throw new Error('Still QUEUED, retrying...');
+          }
 
-        status = res.body.status;
-        attempts++;
-      }
+          return res.body;
+        },
+        { maxAttempts: 30, delayMs: 100 }
+      );
 
-      expect(['PROCESSED', 'FAILED']).toContain(status);
+      expect(['PROCESSED', 'FAILED']).toContain(result.status);
     });
 
     it('should store message after processing', async () => {

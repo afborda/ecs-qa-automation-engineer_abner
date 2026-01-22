@@ -1,8 +1,3 @@
-const request = require('supertest');
-const app = require('../../index');
-const { generateToken, waitForLogProcessing } = require('../helpers/testUtils');
-const { XSS_PAYLOADS, PAYLOAD_SIZE_TESTS } = require('../fixtures/testDataSecurity');
-
 /**
  * Phase 4: Security Testing - XSS Input Validation
  *
@@ -11,8 +6,19 @@ const { XSS_PAYLOADS, PAYLOAD_SIZE_TESTS } = require('../fixtures/testDataSecuri
  * - Reflecting unencoded input
  * - Crashing on edge cases
  *
- * All payloads are stored in testDataSecurity.js for maintainability
+ * ⚠️ ATENÇÃO: Importar setup-worker PRIMEIRO para habilitar o worker!
+ * Alguns testes (Payload Size, Response Validation) precisam que logs
+ * sejam processados para validar comportamento.
  */
+
+// CRÍTICO: Importar setup PRIMEIRO
+require('./setup-worker');
+
+const app = require('../../index');
+const { generateToken, waitForLogProcessing } = require('../helpers/testUtils');
+const { pollWithBackoff } = require('../helpers/pollingHelpers');
+const { XSS_PAYLOADS, PAYLOAD_SIZE_TESTS } = require('../fixtures/testDataSecurity');
+const {request} = require('../helpers/mockHelpers');
 
 describe('Security: XSS-like Input Validation', () => {
   describe('Script Tag Injection', () => {
@@ -313,12 +319,19 @@ describe('Security: XSS-like Input Validation', () => {
 
       expect(res.status).toBe(PAYLOAD_SIZE_TESTS.justOverLimit.expectedStatus);
 
-      // Aguardar processamento com timeout
-      const result = await waitForLogProcessing(res.body.correlationId, 25, 1000);
+      // Worker processa 1 log/segundo - usar delays maiores
+      const result = await pollWithBackoff(
+        async () => {
+          const pollRes = await request(app).get(`/logs/${res.body.correlationId}`);
+          if (pollRes.body.status === 'QUEUED') throw new Error('Still queued');
+          return pollRes.body;
+        },
+        { maxAttempts: 15, initialDelayMs: 500 }
+      );
       expect(result.status).toBe('FAILED');
       // Pode falhar por tamanho ou por razão aleatória
       expect(['Payload too large', 'Random processing failure']).toContain(result.reason);
-    }, 30000);
+    }, 25000);
 
     it('should reject very large payloads', async () => {
       const token = await generateToken();
@@ -351,7 +364,14 @@ describe('Security: XSS-like Input Validation', () => {
 
         expect(res.status).toBe(202);
 
-        const result = await waitForLogProcessing(res.body.correlationId, 12, 1200);
+        const result = await pollWithBackoff(
+          async () => {
+            const pollRes = await request(app).get(`/logs/${res.body.correlationId}`);
+            if (pollRes.body.status === 'QUEUED') throw new Error('Still queued');
+            return pollRes.body;
+          },
+          { maxAttempts: 15, initialDelayMs: 50 }
+        );
         expect(result.status).toBe('FAILED');
 
         if (result.reason === 'Payload too large') {
@@ -364,7 +384,7 @@ describe('Security: XSS-like Input Validation', () => {
       // Security validation: oversized payloads should fail, not execute
       expect(payloadSizeError).toBeTruthy();
       expect(payloadSizeError.reason).toBe('Payload too large');
-    }, 60000);
+    }, 18000);
   });
 
   describe('Response Validation & Output Encoding', () => {
@@ -394,8 +414,15 @@ describe('Security: XSS-like Input Validation', () => {
       expect(postRes.status).toBe(202);
       const correlationId = postRes.body.correlationId;
 
-      // Aguardar processamento
-      await waitForLogProcessing(correlationId, 5, 1000);
+      // Polling otimizado com backoff
+      await pollWithBackoff(
+        async () => {
+          const pollRes = await request(app).get(`/logs/${correlationId}`);
+          if (pollRes.body.status === 'QUEUED') throw new Error('Still queued');
+          return pollRes.body;
+        },
+        { maxAttempts: 10, initialDelayMs: 50 }
+      );
 
       const getRes = await request(app).get(`/logs/${correlationId}`);
 

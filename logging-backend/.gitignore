@@ -144,3 +144,5 @@ vite.config.ts.timestamp-*
 __tests__/e2e/e2e-remote-report.json
 __tests__/e2e/reports/*.json
 !__tests__/e2e/reports/.gitkeep
+
+.jest-cache
