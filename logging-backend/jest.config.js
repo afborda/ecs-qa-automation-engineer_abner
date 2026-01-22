@@ -1,6 +1,4 @@
 // Jest configuration dinâmica baseada no ambiente
-const os = require('os');
-const cpuCount = os.cpus().length;
 
 module.exports = {
   // ============================================

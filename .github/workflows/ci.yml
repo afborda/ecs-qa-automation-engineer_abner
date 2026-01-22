@@ -34,10 +34,31 @@ jobs:
           cd logging-backend
           npm ci
 
+      - name: Security Audit (npm audit)
+        run: |
+          cd logging-backend
+          npm audit --audit-level=moderate || true
+          echo "::notice::Security audit completed - check for vulnerabilities above"
+
       - name: Run Lint
         run: |
           cd logging-backend
           npm run lint
+
+      - name: Check for TypeScript 'any' usage
+        run: |
+          cd logging-backend
+          echo "Checking for 'any' type usage..."
+          if grep -r ": any" --include="*.ts" --include="*.tsx" . 2>/dev/null; then
+            echo "::warning::Found 'any' type usage in code - consider using specific types"
+          else
+            echo "✓ No 'any' types found (or no TypeScript files)"
+          fi
+
+      - name: Run Security Tests
+        run: |
+          cd logging-backend
+          npm run test:security
 
       - name: Run Unit Tests
         run: |

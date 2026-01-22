@@ -15,7 +15,7 @@
 require('./setup-worker');
 
 const app = require('../../index');
-const { generateToken, waitForLogProcessing } = require('../helpers/testUtils');
+const { generateToken } = require('../helpers/testUtils');
 const { pollWithBackoff } = require('../helpers/pollingHelpers');
 const { XSS_PAYLOADS, PAYLOAD_SIZE_TESTS } = require('../fixtures/testDataSecurity');
 const {request} = require('../helpers/mockHelpers');
