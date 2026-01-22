@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const https = require('https');
 
-const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL || 'https://discord.com/api/webhooks/1463314349010456755/RzOkf8vVcO5m9jPNpw5hZuPeawvzB0Vwd_ocWD7hDBy4vSlbZKjF8Ku62VQz_VzSGBzc';
+const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL_GIT || process.env.DISCORD_WEBHOOK_URL || '';
 
 function main() {
   let file1, file2;

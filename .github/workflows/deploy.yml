@@ -65,7 +65,7 @@ jobs:
       - name: Notify Discord - Deploy Success
         if: success()
         run: |
-          curl -X POST "${{ secrets.DISCORD_WEBHOOK }}" \
+          curl -X POST "${{ secrets.DISCORD_WEBHOOK_URL_GIT }}" \
             -H "Content-Type: application/json" \
             -d '{
               "embeds": [{
@@ -84,7 +84,7 @@ jobs:
       - name: Notify Discord - Deploy Failed
         if: failure()
         run: |
-          curl -X POST "${{ secrets.DISCORD_WEBHOOK }}" \
+          curl -X POST "${{ secrets.DISCORD_WEBHOOK_URL_GIT }}" \
             -H "Content-Type: application/json" \
             -d '{
               "embeds": [{
