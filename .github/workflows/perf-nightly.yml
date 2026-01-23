@@ -1,0 +1,93 @@
+name: Performance Nightly
+
+on:
+  schedule:
+    - cron: "0 3 * * *" # 03:00 UTC nightly
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "Remote API base URL (ex: https://example.com/api)"
+        required: false
+        type: string
+jobs:
+  perf-local:
+    name: ⚡ Nightly Load (Local)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: � Install Dependencies
+        working-directory: logging-backend
+        run: npm ci
+
+      - name: 🛠 Install Artillery
+        run: npm i -g artillery@2
+
+      - name: �🚀 Start backend
+        working-directory: logging-backend
+        run: |
+          nohup npm start &
+          for i in {1..40}; do
+            curl -sf http://localhost:3000/metrics && break
+            sleep 1
+          done
+
+      - name: 🧪 Run Artillery local suite
+        working-directory: perf
+        run: |
+          mkdir -p reports/local
+          artillery run artillery-local.yml -o reports/local/nightly-local.json
+
+      - name: 📈 Summarize performance
+        run: node scripts/perf-report.js
+
+      - name: 📤 Upload local artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-local-nightly
+          path: perf/reports/local
+
+      - name: 🛑 Stop backend
+        if: always()
+        run: |
+          pkill -f "node .*logging-backend" || true
+
+  perf-remote:
+    name: 🌐 Nightly Load (Remote)
+    runs-on: ubuntu-latest
+    env:
+      REMOTE_BASE_URL: ${{ inputs.base_url || secrets.REMOTE_BASE_URL }}
+    if: ${{ env.REMOTE_BASE_URL != '' }}
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: 🛠 Install Artillery
+        run: npm i -g artillery@2
+
+      - name: 🧪 Run Artillery remote suite
+        working-directory: perf
+        env:
+          BASE_URL: ${{ secrets.REMOTE_BASE_URL }}
+        run: |
+          mkdir -p reports/remote
+          artillery run artillery-remote.yml -o reports/remote/nightly-remote.json
+
+      - name: 📤 Upload remote artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-remote-nightly
+          path: perf/reports/remote

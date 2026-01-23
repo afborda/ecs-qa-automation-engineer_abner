@@ -8,15 +8,17 @@ const {
 } = require('../helpers/mockHelpers');
 
 const { TOKENS, TEST_USERS } = require('../fixtures/testData');
+const { JWT_TIMING } = require('../fixtures/testConstants');
+const { REAL_JWT_CONFIG, MOCK_TOKENS } = require('../fixtures/mockData');
 
 describe('JWT Authentication', () => {
 
   describe('Token Generation', () => {
     it('should generate token with payload', () => {
       const payload = TEST_USERS.qa;
-      const secret = 'secret-key';
-      const expiresIn = '5s';
-      const expectedToken = 'mock.jwt.token';
+      const secret = REAL_JWT_CONFIG.secret;
+      const expiresIn = JWT_TIMING.TOKEN_LIFETIME_NORMAL;
+      const expectedToken = MOCK_TOKENS.valid;
 
       mockValidJWTSign(expectedToken);
 
@@ -31,8 +33,8 @@ describe('JWT Authentication', () => {
       jwt.sign.mockReturnValueOnce('token-1');
       jwt.sign.mockReturnValueOnce('token-2');
 
-      const token1 = jwt.sign(TEST_USERS.qa, 'secret', { expiresIn: '5s' });
-      const token2 = jwt.sign({ user: 'user2' }, 'secret', { expiresIn: '5s' });
+      const token1 = jwt.sign(TEST_USERS.qa, REAL_JWT_CONFIG.secret, { expiresIn: JWT_TIMING.TOKEN_LIFETIME_NORMAL });
+      const token2 = jwt.sign({ user: 'user2' }, REAL_JWT_CONFIG.secret, { expiresIn: JWT_TIMING.TOKEN_LIFETIME_NORMAL });
 
       expect(token1).toBe('token-1');
       expect(token2).toBe('token-2');
@@ -43,7 +45,7 @@ describe('JWT Authentication', () => {
   describe('Token Verification', () => {
     it('should validate valid token', () => {
       const validToken = TOKENS.valid;
-      const secret = 'secret-key';
+      const secret = REAL_JWT_CONFIG.secret;
       const decoded = { ...TEST_USERS.qa, iat: 1234567 };
 
       jwt.verify.mockReturnValue(decoded);
@@ -56,7 +58,7 @@ describe('JWT Authentication', () => {
 
     it('should reject invalid token with error', () => {
       const invalidToken = TOKENS.invalid;
-      const secret = 'secret-key';
+      const secret = REAL_JWT_CONFIG.secret;
 
       mockInvalidToken();
 
@@ -73,7 +75,7 @@ describe('JWT Authentication', () => {
       mockExpiredToken();
 
       expect(() => {
-        jwt.verify(expiredToken, 'secret');
+        jwt.verify(expiredToken, REAL_JWT_CONFIG.secret);
       }).toThrow('jwt expired');
     });
   });
@@ -98,7 +100,7 @@ describe('JWT Authentication', () => {
     it('should return null if token is invalid', () => {
       mockInvalidDecode();
 
-      const result = jwt.decode('invalid');
+      const result = jwt.decode(TOKENS.invalid);
 
       expect(result).toBeNull();
     });
@@ -106,40 +108,40 @@ describe('JWT Authentication', () => {
 
   describe('Mock Call Tracking', () => {
     it('should track how many times jwt.sign was called', () => {
-      mockValidJWTSign('token');
+      mockValidJWTSign(MOCK_TOKENS.valid);
 
-      jwt.sign({ user: 'user1' }, 'secret', {});
-      jwt.sign({ user: 'user2' }, 'secret', {});
-      jwt.sign({ user: 'user3' }, 'secret', {});
+      jwt.sign({ user: 'user1' }, REAL_JWT_CONFIG.secret, {});
+      jwt.sign({ user: 'user2' }, REAL_JWT_CONFIG.secret, {});
+      jwt.sign({ user: 'user3' }, REAL_JWT_CONFIG.secret, {});
 
       expect(jwt.sign).toHaveBeenCalledTimes(3);
     });
 
     it('should verify last mock call', () => {
-      mockValidJWTSign('token');
+      mockValidJWTSign(MOCK_TOKENS.valid);
 
-      jwt.sign({ user: 'user1' }, 'secret', {});
-      jwt.sign({ user: 'user2' }, 'secret', {});
-      jwt.sign({ user: 'user3' }, 'secret', {});
+      jwt.sign({ user: 'user1' }, REAL_JWT_CONFIG.secret, {});
+      jwt.sign({ user: 'user2' }, REAL_JWT_CONFIG.secret, {});
+      jwt.sign({ user: 'user3' }, REAL_JWT_CONFIG.secret, {});
 
       expect(jwt.sign).toHaveBeenLastCalledWith(
         { user: 'user3' },
-        'secret',
+        REAL_JWT_CONFIG.secret,
         {}
       );
     });
 
     it('should verify nth mock call', () => {
-      mockValidJWTSign('token');
+      mockValidJWTSign(MOCK_TOKENS.valid);
 
-      jwt.sign({ user: 'user1' }, 'secret', {});
-      jwt.sign({ user: 'user2' }, 'secret', {});
-      jwt.sign({ user: 'user3' }, 'secret', {});
+      jwt.sign({ user: 'user1' }, REAL_JWT_CONFIG.secret, {});
+      jwt.sign({ user: 'user2' }, REAL_JWT_CONFIG.secret, {});
+      jwt.sign({ user: 'user3' }, REAL_JWT_CONFIG.secret, {});
 
       expect(jwt.sign).toHaveBeenNthCalledWith(
         2,
         { user: 'user2' },
-        'secret',
+        REAL_JWT_CONFIG.secret,
         {}
       );
     });
@@ -148,7 +150,7 @@ describe('JWT Authentication', () => {
       const expectedToken = 'token-success';
       mockValidJWTSign(expectedToken);
 
-      const result = jwt.sign(TEST_USERS.qa, 'secret', {});
+      const result = jwt.sign(TEST_USERS.qa, REAL_JWT_CONFIG.secret, {});
 
       expect(jwt.sign).toHaveReturned();
       expect(jwt.sign).toHaveReturnedWith(expectedToken);

@@ -11,6 +11,8 @@
  * - Authentication Bypass Attempts
  */
 
+const { PAYLOAD_SIZES } = require('./testConstants');
+
 // ============================================================================
 // XSS INJECTION PAYLOADS (20+ variations)
 // ============================================================================
@@ -53,8 +55,8 @@ const XSS_PAYLOADS = {
   mutationXSS: '<noscript><p title="</noscript><img src=x onerror=alert(1)>">',
 
   // Long payload (boundary testing)
-  longPayloadScript: '<script>' + 'alert(1);'.repeat(100) + '</script>',
-  longPayloadImg: '<img src=x onerror="' + 'alert(1);'.repeat(50) + '">',
+  longPayloadScript: '<script>' + 'alert(1);'.repeat(PAYLOAD_SIZES.XSS_PAYLOAD_REPEAT) + '</script>',
+  longPayloadImg: '<img src=x onerror="' + 'alert(1);'.repeat(PAYLOAD_SIZES.XSS_PAYLOAD_SHORT) + '">',
 };
 
 // ============================================================================
@@ -332,13 +334,13 @@ const PAYLOAD_SIZE_TESTS = {
   },
 
   withinLimit: {
-    message: 'x'.repeat(500),
+    message: 'x'.repeat(PAYLOAD_SIZES.MAX_MESSAGE),
     expectedStatus: 202,
     description: 'Exactly at limit (500 chars)'
   },
 
   justOverLimit: {
-    message: 'x'.repeat(501),
+    message: 'x'.repeat(PAYLOAD_SIZES.LARGE_MESSAGE),
     expectedStatus: 202, // Accepted but will fail processing
     processingStatus: 'FAILED',
     processingReason: 'Payload too large',
@@ -346,7 +348,7 @@ const PAYLOAD_SIZE_TESTS = {
   },
 
   largePayload: {
-    message: 'x'.repeat(10000),
+    message: 'x'.repeat(PAYLOAD_SIZES.VERY_LARGE),
     expectedStatus: 202,
     processingStatus: 'FAILED',
     processingReason: 'Payload too large',
@@ -354,7 +356,7 @@ const PAYLOAD_SIZE_TESTS = {
   },
 
   veryLargePayload: {
-    message: 'x'.repeat(1000000),
+    message: 'x'.repeat(PAYLOAD_SIZES.EXTREME_PAYLOAD),
     expectedStatus: 413, // Payload too large at HTTP level
     description: 'Very large payload (1M chars) - may hit HTTP limits'
   },

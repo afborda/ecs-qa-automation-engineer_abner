@@ -9,6 +9,8 @@ const {
 } = require('../helpers/mockHelpers');
 const { VALID_UUIDS, TOKENS, MESSAGES } = require('../fixtures/testData');
 const { expectErrorResponse } = require('../helpers/testUtils');
+const { HTTP_STATUS } = require('../fixtures/testConstants');
+const { TEST_MESSAGES } = require('../fixtures/mockData');
 
 const app = require('../../index');
 
@@ -16,12 +18,12 @@ describe('API Endpoints Integration Tests', () => {
 
   describe('POST /auth/token', () => {
     it('should generate valid JWT token', async () => {
-      const expectedToken = 'header.payload.signature';
+      const expectedToken = TEST_MESSAGES.logs.general.replace('test', 'header.payload.signature');
       mockValidJWTSign(expectedToken);
 
       const res = await request(app)
         .post('/auth/token')
-        .expect(200);
+        .expect(HTTP_STATUS.OK);
 
       expect(res.body).toHaveProperty('token');
       expect(res.body.token).toBe(expectedToken);
@@ -46,7 +48,7 @@ describe('API Endpoints Integration Tests', () => {
         .post('/logs')
         .set('Authorization', `Bearer ${validToken}`)
         .send(payload)
-        .expect(202);
+        .expect(HTTP_STATUS.ACCEPTED);
 
       expect(res.body).toHaveProperty('correlationId');
       expect(res.body.correlationId).toBeValidUUID();
@@ -61,7 +63,7 @@ describe('API Endpoints Integration Tests', () => {
         .post('/logs')
         .send({ message: MESSAGES.simple });
 
-      expectErrorResponse(res, 401);
+      expectErrorResponse(res, HTTP_STATUS.UNAUTHORIZED);
       expect(res.body.error).toBe('Unauthorized');
     });
 
@@ -74,7 +76,7 @@ describe('API Endpoints Integration Tests', () => {
         .set('Authorization', `Bearer ${expiredToken}`)
         .send({ message: MESSAGES.simple });
 
-      expectErrorResponse(res, 401);
+      expectErrorResponse(res, HTTP_STATUS.UNAUTHORIZED);
       expect(res.body.error).toContain('Token expired or invalid');
     });
 
@@ -86,7 +88,7 @@ describe('API Endpoints Integration Tests', () => {
         .set('Authorization', `Bearer ${TOKENS.invalid}`)
         .send({ message: MESSAGES.simple });
 
-      expectErrorResponse(res, 401);
+      expectErrorResponse(res, HTTP_STATUS.UNAUTHORIZED);
     });
 
     it('should generate unique IDs for each log', async () => {
@@ -95,12 +97,12 @@ describe('API Endpoints Integration Tests', () => {
       const res1 = await request(app)
         .post('/logs')
         .set('Authorization', `Bearer ${TOKENS.valid}`)
-        .send({ message: 'log 1' });
+        .send({ message: `${TEST_MESSAGES.logs.general} 1` });
 
       const res2 = await request(app)
         .post('/logs')
         .set('Authorization', `Bearer ${TOKENS.valid}`)
-        .send({ message: 'log 2' });
+        .send({ message: `${TEST_MESSAGES.logs.general} 2` });
 
       expect(res1.body.correlationId).not.toBe(res2.body.correlationId);
     });
@@ -119,7 +121,7 @@ describe('API Endpoints Integration Tests', () => {
 
       const getRes = await request(app)
         .get(`/logs/${correlationId}`)
-        .expect(200);
+        .expect(HTTP_STATUS.OK);
 
       expect(getRes.body.status).toBe('QUEUED');
     });
@@ -129,9 +131,9 @@ describe('API Endpoints Integration Tests', () => {
 
       const res = await request(app)
         .get(`/logs/${fakeId}`)
-        .expect(404);
+        .expect(HTTP_STATUS.NOT_FOUND);
 
-      expectErrorResponse(res, 404);
+      expectErrorResponse(res, HTTP_STATUS.NOT_FOUND);
       expect(res.body.error).toBe('Not found');
     });
 
@@ -141,8 +143,8 @@ describe('API Endpoints Integration Tests', () => {
       const res = await request(app)
         .get(`/logs/${fakeId}`);
 
-      expect(res.status).toBe(404);
-      expect(res.status).not.toBe(401);
+      expect(res.status).toBe(HTTP_STATUS.NOT_FOUND);
+      expect(res.status).not.toBe(HTTP_STATUS.UNAUTHORIZED);
     });
   });
 
@@ -150,7 +152,7 @@ describe('API Endpoints Integration Tests', () => {
     it('should return system metrics', async () => {
       const res = await request(app)
         .get('/metrics')
-        .expect(200);
+        .expect(HTTP_STATUS.OK);
 
       expect(res.body).toHaveProperty('queued');
       expect(res.body).toHaveProperty('processed');
@@ -165,8 +167,8 @@ describe('API Endpoints Integration Tests', () => {
       const res = await request(app)
         .get('/metrics');
 
-      expect(res.status).not.toBe(401);
-      expect(res.status).toBe(200);
+      expect(res.status).not.toBe(HTTP_STATUS.UNAUTHORIZED);
+      expect(res.status).toBe(HTTP_STATUS.OK);
     });
   });
 
@@ -178,9 +180,9 @@ describe('API Endpoints Integration Tests', () => {
         const res = await request(app)
           .post('/logs')
           .set('Authorization', `Bearer ${TOKENS.valid}`)
-          .send({ message: `log ${i}` });
+          .send({ message: `${TEST_MESSAGES.logs.general} ${i}` });
 
-        expect(res.status).not.toBe(429);
+        expect(res.status).not.toBe(HTTP_STATUS.TOO_MANY_REQUESTS);
       }
     });
   });

@@ -83,7 +83,8 @@ expect.extend({
  * Razão: Testes async com polling podem levar até 25s (worker com 30% failure rate)
  * Testes específicos podem sobrescrever com jest.setTimeout() local
  */
-jest.setTimeout(30000);
+const { TIMEOUTS } = require('./fixtures/testConstants');
+jest.setTimeout(TIMEOUTS.REQUEST_TIMEOUT);
 
 // ============================================
 // SEÇÃO 3: Mock Reset Between Tests

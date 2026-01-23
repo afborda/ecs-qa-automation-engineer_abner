@@ -16,9 +16,14 @@ const {
 const { TOKENS, MESSAGES, LOG_STATUSES } = require('../fixtures/testData');
 const { createLog } = require('../helpers/testUtils');
 const { pollWithFixedDelay } = require('../helpers/pollingHelpers');
+const { HTTP_STATUS, TIMEOUTS, PAYLOAD_SIZES } = require('../fixtures/testConstants');
+const { TEST_MESSAGES } = require('../fixtures/mockData');
 
 // Agora importar app com worker ativo
 const app = require('../../index');
+
+// Alguns cenários de worker podem ultrapassar 30s em ambientes mais lentos
+jest.setTimeout(TIMEOUTS.SLOW_TEST_TIMEOUT);
 
 describe('Async Worker - Log Processing', () => {
 
@@ -56,7 +61,7 @@ describe('Async Worker - Log Processing', () => {
 
           return res.body;
         },
-        { maxAttempts: 30, delayMs: 100 }
+        { maxAttempts: 30, delayMs: TIMEOUTS.POLLING_INTERVAL / 5 }
       );
 
       expect(['PROCESSED', 'FAILED']).toContain(result.status);
@@ -65,12 +70,12 @@ describe('Async Worker - Log Processing', () => {
     it('should store message after processing', async () => {
       setupIntegrationAuth();
 
-      const testMessage = 'My test message';
+      const testMessage = `${TEST_MESSAGES.logs.validMessage} - stored`;
       const correlationId = await createLog(testMessage, TOKENS.valid);
 
       let processed = false;
       for (let i = 0; i < 30; i++) {
-        await new Promise(r => setTimeout(r, 100));
+        await new Promise(r => setTimeout(r, TIMEOUTS.POLLING_INTERVAL / 5));
 
         const res = await request(app)
           .get(`/logs/${correlationId}`);
@@ -97,14 +102,14 @@ describe('Async Worker - Log Processing', () => {
       for (let i = 0; i < 20; i++) {
         const res = await request(app)
           .post('/logs')
-          .set('Authorization', 'Bearer token')
-          .send({ message: `log ${i}` });
+          .set('Authorization', `Bearer ${TOKENS.valid}`)
+          .send({ message: `${TEST_MESSAGES.logs.general} ${i}` });
 
         correlationIds.push(res.body.correlationId);
-        await new Promise(r => setTimeout(r, 50));
+        await new Promise(r => setTimeout(r, TIMEOUTS.POLLING_INTERVAL / 10));
       }
 
-      await new Promise(r => setTimeout(r, 3000));
+      await new Promise(r => setTimeout(r, TIMEOUTS.SERVER_START_WAIT));
 
       let processedCount = 0;
       let failedCount = 0;
@@ -123,19 +128,19 @@ describe('Async Worker - Log Processing', () => {
     it('should fail logs with payload > 500 chars', async () => {
       jwt.verify.mockReturnValue({ user: 'qa' });
 
-      const largeMessage = 'x'.repeat(501);
+      const largeMessage = 'x'.repeat(PAYLOAD_SIZES.LARGE_MESSAGE);
 
       const res = await request(app)
         .post('/logs')
-        .set('Authorization', 'Bearer token')
+        .set('Authorization', `Bearer ${TOKENS.valid}`)
         .send({ message: largeMessage });
 
       const { correlationId } = res.body;
 
-      expect(res.status).toBe(202);
+      expect(res.status).toBe(HTTP_STATUS.ACCEPTED);
       expect(correlationId).toBeValidUUID();
 
-      await new Promise(r => setTimeout(r, 2000));
+      await new Promise(r => setTimeout(r, TIMEOUTS.WORKER_PROCESSING_DELAY));
 
       const getRes = await request(app)
         .get(`/logs/${correlationId}`);
@@ -157,15 +162,15 @@ describe('Async Worker - Log Processing', () => {
 
       await request(app)
         .post('/logs')
-        .set('Authorization', 'Bearer token')
-        .send({ message: 'test' });
+        .set('Authorization', `Bearer ${TOKENS.valid}`)
+        .send({ message: TEST_MESSAGES.logs.general });
 
       const queuedRes = await request(app)
         .get('/metrics');
 
       expect(queuedRes.body.queued).toBeGreaterThan(0);
 
-      await new Promise(r => setTimeout(r, 1500));
+      await new Promise(r => setTimeout(r, TIMEOUTS.POLLING_INTERVAL * 3));
 
       const finalRes = await request(app)
         .get('/metrics');

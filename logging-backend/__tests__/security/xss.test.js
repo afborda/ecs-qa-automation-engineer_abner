@@ -18,7 +18,8 @@ const app = require('../../index');
 const { generateToken } = require('../helpers/testUtils');
 const { pollWithBackoff } = require('../helpers/pollingHelpers');
 const { XSS_PAYLOADS, PAYLOAD_SIZE_TESTS } = require('../fixtures/testDataSecurity');
-const {request} = require('../helpers/mockHelpers');
+const { HTTP_STATUS } = require('../fixtures/testConstants');
+const { request } = require('../helpers/mockHelpers');
 
 describe('Security: XSS-like Input Validation', () => {
   describe('Script Tag Injection', () => {
@@ -31,7 +32,7 @@ describe('Security: XSS-like Input Validation', () => {
         .set('Authorization', `Bearer ${token}`)
         .send(payload);
 
-      expect(res.status).toBe(202);
+      expect(res.status).toBe(HTTP_STATUS.ACCEPTED);
       expect(res.body).toHaveProperty('correlationId');
 
       // Validar que o log foi aceito sem executar
@@ -49,7 +50,7 @@ describe('Security: XSS-like Input Validation', () => {
         .set('Authorization', `Bearer ${token}`)
         .send(payload);
 
-      expect(res.status).toBe(202);
+      expect(res.status).toBe(HTTP_STATUS.ACCEPTED);
     });
 
     it('should handle script with external src', async () => {
@@ -61,7 +62,7 @@ describe('Security: XSS-like Input Validation', () => {
         .set('Authorization', `Bearer ${token}`)
         .send(payload);
 
-      expect(res.status).toBe(202);
+      expect(res.status).toBe(HTTP_STATUS.ACCEPTED);
     });
 
     it('should handle script using eval', async () => {
@@ -73,7 +74,7 @@ describe('Security: XSS-like Input Validation', () => {
         .set('Authorization', `Bearer ${token}`)
         .send(payload);
 
-      expect(res.status).toBe(202);
+      expect(res.status).toBe(HTTP_STATUS.ACCEPTED);
     });
   });
 
@@ -87,7 +88,7 @@ describe('Security: XSS-like Input Validation', () => {
         .set('Authorization', `Bearer ${token}`)
         .send(payload);
 
-      expect(res.status).toBe(202);
+      expect(res.status).toBe(HTTP_STATUS.ACCEPTED);
       expect(res.body).toHaveProperty('correlationId');
     });
 
@@ -100,7 +101,7 @@ describe('Security: XSS-like Input Validation', () => {
         .set('Authorization', `Bearer ${token}`)
         .send(payload);
 
-      expect(res.status).toBe(202);
+      expect(res.status).toBe(HTTP_STATUS.ACCEPTED);
     });
 
     it('should handle svg with onload event', async () => {
@@ -112,7 +113,7 @@ describe('Security: XSS-like Input Validation', () => {
         .set('Authorization', `Bearer ${token}`)
         .send(payload);
 
-      expect(res.status).toBe(202);
+      expect(res.status).toBe(HTTP_STATUS.ACCEPTED);
       expect(res.body).toHaveProperty('correlationId');
     });
 
@@ -125,7 +126,7 @@ describe('Security: XSS-like Input Validation', () => {
         .set('Authorization', `Bearer ${token}`)
         .send(payload);
 
-      expect(res.status).toBe(202);
+      expect(res.status).toBe(HTTP_STATUS.ACCEPTED);
     });
 
     it('should handle body onload event', async () => {
@@ -137,7 +138,7 @@ describe('Security: XSS-like Input Validation', () => {
         .set('Authorization', `Bearer ${token}`)
         .send(payload);
 
-      expect(res.status).toBe(202);
+      expect(res.status).toBe(HTTP_STATUS.ACCEPTED);
     });
 
     it('should handle input autofocus with onfocus', async () => {
@@ -149,7 +150,7 @@ describe('Security: XSS-like Input Validation', () => {
         .set('Authorization', `Bearer ${token}`)
         .send(payload);
 
-      expect(res.status).toBe(202);
+      expect(res.status).toBe(HTTP_STATUS.ACCEPTED);
     });
   });
 
@@ -163,7 +164,7 @@ describe('Security: XSS-like Input Validation', () => {
         .set('Authorization', `Bearer ${token}`)
         .send(payload);
 
-      expect(res.status).toBe(202);
+      expect(res.status).toBe(HTTP_STATUS.ACCEPTED);
     });
 
     it('should handle double URL encoded XSS', async () => {
@@ -175,7 +176,7 @@ describe('Security: XSS-like Input Validation', () => {
         .set('Authorization', `Bearer ${token}`)
         .send(payload);
 
-      expect(res.status).toBe(202);
+      expect(res.status).toBe(HTTP_STATUS.ACCEPTED);
     });
 
     it('should handle HTML encoded XSS', async () => {
@@ -187,7 +188,7 @@ describe('Security: XSS-like Input Validation', () => {
         .set('Authorization', `Bearer ${token}`)
         .send(payload);
 
-      expect(res.status).toBe(202);
+      expect(res.status).toBe(HTTP_STATUS.ACCEPTED);
     });
 
     it('should handle Unicode escaped XSS', async () => {
@@ -199,7 +200,7 @@ describe('Security: XSS-like Input Validation', () => {
         .set('Authorization', `Bearer ${token}`)
         .send(payload);
 
-      expect(res.status).toBe(202);
+      expect(res.status).toBe(HTTP_STATUS.ACCEPTED);
     });
 
     it('should handle hex encoded XSS', async () => {
@@ -211,7 +212,7 @@ describe('Security: XSS-like Input Validation', () => {
         .set('Authorization', `Bearer ${token}`)
         .send(payload);
 
-      expect(res.status).toBe(202);
+      expect(res.status).toBe(HTTP_STATUS.ACCEPTED);
     });
   });
 
@@ -225,7 +226,7 @@ describe('Security: XSS-like Input Validation', () => {
         .set('Authorization', `Bearer ${token}`)
         .send(payload);
 
-      expect(res.status).toBe(202);
+      expect(res.status).toBe(HTTP_STATUS.ACCEPTED);
     });
 
     it('should handle CSS import with javascript URI', async () => {
@@ -237,7 +238,7 @@ describe('Security: XSS-like Input Validation', () => {
         .set('Authorization', `Bearer ${token}`)
         .send(payload);
 
-      expect(res.status).toBe(202);
+      expect(res.status).toBe(HTTP_STATUS.ACCEPTED);
     });
 
     it('should handle SVG path with javascript URI', async () => {
@@ -249,7 +250,7 @@ describe('Security: XSS-like Input Validation', () => {
         .set('Authorization', `Bearer ${token}`)
         .send(payload);
 
-      expect(res.status).toBe(202);
+      expect(res.status).toBe(HTTP_STATUS.ACCEPTED);
     });
   });
 
@@ -263,7 +264,7 @@ describe('Security: XSS-like Input Validation', () => {
         .set('Authorization', `Bearer ${token}`)
         .send(payload);
 
-      expect(res.status).toBe(202);
+      expect(res.status).toBe(HTTP_STATUS.ACCEPTED);
     });
 
     it('should handle javascript: protocol URI', async () => {
@@ -275,7 +276,7 @@ describe('Security: XSS-like Input Validation', () => {
         .set('Authorization', `Bearer ${token}`)
         .send(payload);
 
-      expect(res.status).toBe(202);
+      expect(res.status).toBe(HTTP_STATUS.ACCEPTED);
     });
   });
 
@@ -289,7 +290,7 @@ describe('Security: XSS-like Input Validation', () => {
         .set('Authorization', `Bearer ${token}`)
         .send(payload);
 
-      expect(res.status).toBe(202);
+      expect(res.status).toBe(HTTP_STATUS.ACCEPTED);
     });
   });
 
@@ -362,7 +363,7 @@ describe('Security: XSS-like Input Validation', () => {
           .set('Authorization', `Bearer ${token}`)
           .send(payload);
 
-        expect(res.status).toBe(202);
+        expect(res.status).toBe(HTTP_STATUS.ACCEPTED);
 
         const result = await pollWithBackoff(
           async () => {
@@ -397,7 +398,7 @@ describe('Security: XSS-like Input Validation', () => {
         .set('Authorization', `Bearer ${token}`)
         .send(payload);
 
-      expect(res.status).toBe(202);
+      expect(res.status).toBe(HTTP_STATUS.ACCEPTED);
       expect(res.headers['content-type']).toMatch(/json/);
       expect(res.headers['content-type']).toBe('application/json; charset=utf-8');
     });
@@ -411,7 +412,7 @@ describe('Security: XSS-like Input Validation', () => {
         .set('Authorization', `Bearer ${token}`)
         .send(payload);
 
-      expect(postRes.status).toBe(202);
+      expect(postRes.status).toBe(HTTP_STATUS.ACCEPTED);
       const correlationId = postRes.body.correlationId;
 
       // Polling otimizado com backoff
@@ -427,7 +428,7 @@ describe('Security: XSS-like Input Validation', () => {
       const getRes = await request(app).get(`/logs/${correlationId}`);
 
       // Verificar que a resposta é JSON válido
-      expect(getRes.status).toBe(200);
+      expect(getRes.status).toBe(HTTP_STATUS.OK);
       expect(getRes.headers['content-type']).toMatch(/json/);
 
       // Se processado, message deve estar presente (não deve executar)
@@ -471,7 +472,7 @@ describe('Security: XSS-like Input Validation', () => {
         .send(payload);
 
       // Validar headers de segurança
-      expect(res.status).toBe(202);
+      expect(res.status).toBe(HTTP_STATUS.ACCEPTED);
       expect(res.headers['content-type']).toMatch(/json/);
       // X-Content-Type-Options: nosniff previne MIME sniffing
       // Note: Backend pode não implementar, então just document
@@ -486,7 +487,7 @@ describe('Security: XSS-like Input Validation', () => {
         .set('Authorization', `Bearer ${token}`)
         .send(payload);
 
-      expect(res.status).toBe(202);
+      expect(res.status).toBe(HTTP_STATUS.ACCEPTED);
       expect(res.body).toHaveProperty('correlationId');
 
       // correlationId deve ser UUID format, não arbitrary text

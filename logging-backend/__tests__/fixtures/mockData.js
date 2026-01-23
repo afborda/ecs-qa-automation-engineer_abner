@@ -4,11 +4,65 @@
  * Separado de funções (helpers) e dados genéricos (testData.js)
  */
 
+// ============================================
+// TEST MESSAGES (Mensagens de teste centralizadas)
+// ============================================
+const TEST_MESSAGES = {
+  auth: {
+    withoutAuth: 'test without auth',
+    emptyAuth: 'test empty auth',
+    bearerNoToken: 'test',
+    invalidToken: 'test',
+    expiredToken: 'test expired token',
+    tamperedPayload: 'test',
+  },
+  logs: {
+    validMessage: 'test valid token',
+    general: 'test',
+  },
+  e2e: {
+    simple: 'Test log message from E2E local tests',
+    invalidId: 'invalid-correlation-id-xyz-123',
+  },
+};
+
+// ============================================
+// MOCK TOKENS (para testes com JWT mockado)
+// ============================================
 const MOCK_TOKENS = {
   valid: 'valid.jwt.token',
   expired: 'expired.token',
   invalid: 'invalid.token',
   malformed: 'only.twoparts',
+};
+
+// ============================================
+// REAL JWT CONFIG (para testes de segurança)
+// ============================================
+const REAL_JWT_CONFIG = {
+  // Secret usada pelo backend (hardcoded em index.js)
+  secret: 'qa-secret',
+
+  // Opções de expiração para diferentes cenários
+  expiry: {
+    valid: '1h',        // Token válido por 1 hora
+    short: '1s',        // Token que expira rápido (para testes de expiração)
+    expired: '-1s',     // Token já expirado
+  },
+
+  // Payloads para testes de segurança
+  payloads: {
+    validUser: { user: 'qa' },
+    adminUser: { user: 'admin' },
+    tamperedAdmin: { user: 'admin', iat: 9999999999 },
+  },
+
+  // Tokens malformados para testes de validação
+  malformedTokens: {
+    notJwt: 'not-a-valid-jwt',
+    twoPartsOnly: 'header.payload',
+    invalidSignature: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjoicWEiLCJpYXQiOjE3MzcwMDAwMDAsImV4cCI6OTk5OTk5OTk5OX0.INVALID_SIGNATURE',
+  },
 };
 
 const MOCK_USER_PAYLOADS = {
@@ -41,8 +95,10 @@ const AUTH_HEADERS = {
 };
 
 module.exports = {
+  TEST_MESSAGES,
   MOCK_TOKENS,
   MOCK_USER_PAYLOADS,
   JWT_MOCK_CONFIG,
   AUTH_HEADERS,
+  REAL_JWT_CONFIG,
 };

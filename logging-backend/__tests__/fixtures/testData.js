@@ -1,3 +1,5 @@
+const { PAYLOAD_SIZES } = require('./testConstants');
+
 const VALID_UUIDS = {
   correlationId: '123e4567-e89b-12d3-a456-426614174000',
   nonExistent: '99999999-9999-9999-9999-999999999999',
@@ -13,8 +15,8 @@ const TOKENS = {
 const MESSAGES = {
   simple: 'Test log message',
   empty: '',
-  large: 'x'.repeat(501),
-  maxSize: 'x'.repeat(500),
+  large: 'x'.repeat(PAYLOAD_SIZES.LARGE_MESSAGE),
+  maxSize: 'x'.repeat(PAYLOAD_SIZES.MAX_MESSAGE),
 };
 
 const API_RESPONSES = {
