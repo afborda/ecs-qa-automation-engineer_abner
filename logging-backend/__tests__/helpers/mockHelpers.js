@@ -2,6 +2,11 @@
  * Mock Helpers
  * Funções para configurar comportamentos de mocks Jest
  * Trabalha com jsonwebtoken mock e dados de mockData.js
+ *
+ * ORGANIZATION:
+ * - Lines 15-71: Mock functions (use Jest mocks, for integration tests)
+ * - Lines 73-133: Real JWT functions (use actual lib, for security tests)
+ * - Lines 135-163: Exports (separated by type for clarity)
  */
 
 const jwt = require('jsonwebtoken');

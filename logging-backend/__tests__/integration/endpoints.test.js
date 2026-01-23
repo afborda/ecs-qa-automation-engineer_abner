@@ -163,6 +163,22 @@ describe('API Endpoints Integration Tests', () => {
       expect(res.body.memoryUsageMB).toBeGreaterThanOrEqual(0);
     });
 
+    it('should return valid metrics shape with numbers', async () => {
+      const res = await request(app)
+        .get('/metrics')
+        .expect(HTTP_STATUS.OK);
+
+      // Validate complete shape
+      expect(res.body).toEqual({
+        queued: expect.any(Number),
+        processed: expect.any(Number),
+        memoryUsageMB: expect.any(Number)
+      });
+
+      // No extra properties
+      expect(Object.keys(res.body)).toHaveLength(3);
+    });
+
     it('should NOT require authentication', async () => {
       const res = await request(app)
         .get('/metrics');

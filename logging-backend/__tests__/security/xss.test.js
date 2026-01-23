@@ -39,6 +39,11 @@ describe('Security: XSS-like Input Validation', () => {
       const correlationId = res.body.correlationId;
       const pollRes = await request(app).get(`/logs/${correlationId}`);
       expect(['QUEUED', 'PROCESSED', 'FAILED']).toContain(pollRes.body.status);
+
+      // Quando processado, a mensagem armazenada deve ser igual ao payload (não alterada)
+      if (pollRes.body.status === 'PROCESSED') {
+        expect(pollRes.body.message).toBe(payload.message);
+      }
     });
 
     it('should not crash with nested script tags', async () => {

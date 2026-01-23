@@ -27,7 +27,7 @@ describe('Security: Error Handling & Information Leakage', () => {
       const res = await request(app)
         .post('/logs')
         .send({ message: null }) // Null pode causar erro interno
-        .catch(err => err.response || err);
+        
 
       // Validar que não há stack trace
       expect(res.body.stack).toBeUndefined();
@@ -45,7 +45,7 @@ describe('Security: Error Handling & Information Leakage', () => {
       const res = await request(app)
         .post('/logs')
         .send({ invalid: 'structure' })
-        .catch(err => err.response || err);
+        
 
       // Mensagem deve ser genérica, não expor tipos específicos
       const message = res.body.message || res.body.error || '';
@@ -59,7 +59,7 @@ describe('Security: Error Handling & Information Leakage', () => {
       // Tentar acessar rota que não existe
       const res = await request(app)
         .get('/admin/secrets')
-        .catch(err => err.response || err);
+        
 
       const responseStr = JSON.stringify(res.body);
 
@@ -78,7 +78,7 @@ describe('Security: Error Handling & Information Leakage', () => {
         .post('/logs')
         .set('Authorization', 'Bearer invalid.token.here')
         .send({ message: 'test' })
-        .catch(err => err.response || err);
+        
 
       const responseStr = JSON.stringify(res.body) + JSON.stringify(res.headers);
 
@@ -96,7 +96,7 @@ describe('Security: Error Handling & Information Leakage', () => {
         .post('/logs')
         .set('Authorization', 'Bearer ' + 'x'.repeat(PAYLOAD_SIZES.HEADER_BLOAT))
         .send({ message: 'test' })
-        .catch(err => err.response || err);
+        
 
       const responseStr = JSON.stringify(res.body);
 
@@ -116,7 +116,7 @@ describe('Security: Error Handling & Information Leakage', () => {
         .post('/logs')
         .set('Authorization', `Bearer ${invalidToken}`)
         .send({ message: 'test' })
-        .catch(err => err.response || err);
+        
 
       // Token não deve aparecer em resposta de erro
       const responseStr = JSON.stringify(res.body);
@@ -131,7 +131,7 @@ describe('Security: Error Handling & Information Leakage', () => {
       const res = await request(app)
         .post('/logs')
         .send({ message: 'x'.repeat(PAYLOAD_SIZES.VERY_LARGE) }) // Payload muito grande
-        .catch(err => err.response || err);
+        
 
       const responseStr = JSON.stringify(res.body);
 
@@ -147,7 +147,7 @@ describe('Security: Error Handling & Information Leakage', () => {
       // Request que cause erro
       const res = await request(app)
         .get('/invalid-route')
-        .catch(err => err.response || err);
+        
 
       const responseStr = JSON.stringify(res.body);
 
@@ -164,7 +164,7 @@ describe('Security: Error Handling & Information Leakage', () => {
       const res = await request(app)
         .post('/logs')
         .send({ invalid: true })
-        .catch(err => err.response || err);
+        
 
       const responseStr = JSON.stringify(res.body);
 
@@ -184,7 +184,7 @@ describe('Security: Error Handling & Information Leakage', () => {
       const res = await request(app)
         .post('/logs')
         .send({ invalid: true })
-        .catch(err => err.response || err);
+        
 
       // Deve ter estrutura previsível
       expect(res.body).toBeDefined();
@@ -208,7 +208,7 @@ describe('Security: Error Handling & Information Leakage', () => {
       const res = await request(app)
         .post('/logs')
         .send(sensitiveData)
-        .catch(err => err.response || err);
+        
 
       const responseStr = JSON.stringify(res.body);
 
@@ -225,7 +225,7 @@ describe('Security: Error Handling & Information Leakage', () => {
         .post('/logs')
         .set('Authorization', `Bearer ${validToken}`)
         .send(null)
-        .catch(err => err.response || err);
+        
 
       // A API pode aceitar (202) ou validar (400/415/422) dependendo da lógica; ambos são válidos
       expect([
@@ -241,7 +241,7 @@ describe('Security: Error Handling & Information Leakage', () => {
         .post('/logs')
         .set('Authorization', 'Bearer invalid')
         .send({ message: 'test' })
-        .catch(err => err.response || err);
+        
 
       // Em ambiente de teste, JWT pode estar mockado e permitir 202; em prod deve ser 401
       expect([HTTP_STATUS.ACCEPTED, HTTP_STATUS.UNAUTHORIZED]).toContain(res401.status);

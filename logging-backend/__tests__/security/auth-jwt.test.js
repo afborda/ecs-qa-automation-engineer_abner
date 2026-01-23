@@ -196,6 +196,8 @@ describe('Security: Rate Limiting', () => {
 
     // Express-rate-limit tipicamente adiciona headers
     expect([HTTP_STATUS.OK, HTTP_STATUS.ACCEPTED]).toContain(res.status);
+    expect(res.headers['x-ratelimit-limit']).toBeDefined();
+    expect(res.headers['x-ratelimit-remaining']).toBeDefined();
   });
 
   // NOTA: Teste completo de rate limit (100+ requests) seria lento

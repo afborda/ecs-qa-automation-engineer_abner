@@ -3,18 +3,19 @@
  * Contains payloads and test cases for security testing (Phase 4)
  *
  * Categories:
- * - XSS Injection Payloads
- * - SQL Injection Patterns
- * - JWT Manipulation
- * - CORS Scenarios
- * - Rate Limit Test Cases
- * - Authentication Bypass Attempts
+ * - XSS Injection Payloads (ALL USED - 20+ variations in xss.test.js)
+ * - SQL Injection Patterns (UNUSED - API doesn't use database)
+ * - JWT Manipulation (UNUSED - tests use real JWT functions from mockHelpers)
+ * - CORS Scenarios (UNUSED - tests use inline expectations)
+ * - Rate Limit Test Cases (UNUSED - tests use inline expectations)
+ * - Authentication Bypass Attempts (PARTIAL - some used)
  */
 
 const { PAYLOAD_SIZES } = require('./testConstants');
 
 // ============================================================================
-// XSS INJECTION PAYLOADS (20+ variations)
+// XSS INJECTION PAYLOADS (20+ variations) - ALL ACTIVELY USED
+// Used in: __tests__/security/xss.test.js (36 tests covering all payloads)
 // ============================================================================
 
 const XSS_PAYLOADS = {
@@ -60,7 +61,9 @@ const XSS_PAYLOADS = {
 };
 
 // ============================================================================
-// SQL INJECTION PATTERNS (15+ variations)
+// SQL INJECTION PATTERNS (15+ variations) - CURRENTLY UNUSED
+// Reason: This API does not use a database - all data is in-memory
+// Kept for reference in case a database integration is added in the future
 // ============================================================================
 
 const SQL_INJECTION_PAYLOADS = {
@@ -92,7 +95,10 @@ const SQL_INJECTION_PAYLOADS = {
 };
 
 // ============================================================================
-// JWT MANIPULATION PAYLOADS (10+ variations)
+// JWT MANIPULATION PAYLOADS (10+ variations) - CURRENTLY UNUSED
+// Reason: Security tests use real JWT functions from mockHelpers.js
+// (generateRealToken, tamperTokenPayload, etc.)
+// Kept for documentation and potential future use
 // ============================================================================
 
 const JWT_PAYLOADS = {
@@ -152,7 +158,10 @@ const JWT_PAYLOADS = {
 };
 
 // ============================================================================
-// CORS SCENARIOS (8+ test cases)
+// CORS SCENARIOS (8+ test cases) - CURRENTLY UNUSED
+// Reason: CORS tests in cors-rate-limit.test.js use inline expectations
+// Backend doesn't implement CORS headers - tests verify this absence
+// Kept for reference if CORS is implemented in the future
 // ============================================================================
 
 const CORS_SCENARIOS = {
@@ -215,7 +224,10 @@ const CORS_SCENARIOS = {
 };
 
 // ============================================================================
-// RATE LIMIT TEST CASES (5+ patterns)
+// RATE LIMIT TEST CASES (5+ patterns) - CURRENTLY UNUSED
+// Reason: Rate limit tests in auth-jwt.test.js validate actual backend behavior
+// These scenarios are reference patterns for complex testing
+// Kept for documentation purposes
 // ============================================================================
 
 const RATE_LIMIT_TESTS = {

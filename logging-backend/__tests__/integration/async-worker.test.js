@@ -192,8 +192,8 @@ describe('Async Worker - Log Processing', () => {
       const finalProcessed = finalRes.body.processed || 0;
       const finalQueued = finalRes.body.queued || 0;
 
-      // Either processed increased OR queue is being managed
-      expect(finalProcessed >= initialProcessed || finalQueued >= 0).toBe(true);
+      // Either processed increased OR queue diminuiu (sinal de trabalho do worker)
+      expect(finalProcessed >= initialProcessed || finalQueued < initialRes.body.queued).toBe(true);
     });
   });
 
