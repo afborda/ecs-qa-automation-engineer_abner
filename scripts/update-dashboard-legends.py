@@ -22,7 +22,7 @@ legend_replacements = {
     "Duration - {{branch}}": "Duracao (segundos)",
     # Inglês para Português
     "Passed": "Passou",
-    "Failed": "Falhou", 
+    "Failed": "Falhou",
     "Skipped": "Ignorado",
     "Lines": "Linhas",
     "Functions": "Funcoes",
@@ -42,7 +42,7 @@ for panel in dashboard['panels']:
                     new_legend = legend_replacements[old_legend]
                     target['legendFormat'] = new_legend
                     changes.append(f"  '{old_legend}' -> '{new_legend}'")
-    
+
     # Atualizar overrides para cores em português
     if 'fieldConfig' in panel and 'overrides' in panel.get('fieldConfig', {}):
         for override in panel['fieldConfig'].get('overrides', []):
