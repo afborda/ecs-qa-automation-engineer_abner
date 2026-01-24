@@ -101,6 +101,9 @@ jobs:
         run: |
           cd logging-backend
           npm run test:ci -- --json --outputFile=../test-results.json
+        env:
+          RATE_LIMIT: 1000
+          DISABLE_WORKER: "true"
 
       - name: 📤 Publish Metrics to Prometheus
         if: always()
