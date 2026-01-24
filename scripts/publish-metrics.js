@@ -44,6 +44,7 @@ const config = {
   pushgatewayUrl: process.env.PUSHGATEWAY_URL || 'http://localhost:9091',
   jestResultsFile: process.env.JEST_RESULTS_FILE || 'test-results.json',
   coverageFile: process.env.COVERAGE_FILE || 'coverage/coverage-summary.json',
+  securityResultsFile: process.env.SECURITY_RESULTS_FILE || 'security-results.json',
   jobName: process.env.JOB_NAME || 'qa-tests',
   branchName: process.env.BRANCH_NAME || process.env.GITHUB_REF_NAME || 'main',
   buildNumber: process.env.BUILD_NUMBER || process.env.GITHUB_RUN_NUMBER || 'local',
@@ -92,6 +93,27 @@ function readCoverage() {
     return JSON.parse(content);
   } catch (error) {
     console.error(`❌ Erro ao ler coverage: ${error.message}`);
+    return null;
+  }
+}
+
+/**
+ * Lê o arquivo JSON de resultados de segurança
+ * @returns {Object} Security results ou null
+ */
+function readSecurityResults() {
+  const filePath = path.resolve(process.cwd(), config.securityResultsFile);
+
+  if (!fs.existsSync(filePath)) {
+    console.warn(`⚠️  Arquivo security não encontrado: ${filePath}`);
+    return null;
+  }
+
+  try {
+    const content = fs.readFileSync(filePath, 'utf-8');
+    return JSON.parse(content);
+  } catch (error) {
+    console.error(`❌ Erro ao ler security results: ${error.message}`);
     return null;
   }
 }
@@ -173,6 +195,37 @@ function extractCoverageMetrics(coverage) {
   };
 }
 
+/**
+ * Extrai métricas de segurança
+ * @param {Object} securityResults - Resultados de testes de segurança
+ * @returns {Object} Métricas de segurança
+ */
+function extractSecurityMetrics(securityResults) {
+  if (!securityResults) {
+    return {
+      authTestsPassed: 0,
+      injectionTestsPassed: 0,
+      xssTestsPassed: 0,
+      rateLimitTestsPassed: 0,
+      headersTestsPassed: 0,
+      totalTests: 0,
+      testsPassed: 0,
+      testsFailed: 0,
+    };
+  }
+
+  return {
+    authTestsPassed: securityResults.authTestsPassed || 0,
+    injectionTestsPassed: securityResults.injectionTestsPassed || 0,
+    xssTestsPassed: securityResults.xssTestsPassed || 0,
+    rateLimitTestsPassed: securityResults.rateLimitTestsPassed || 0,
+    headersTestsPassed: securityResults.headersTestsPassed || 0,
+    totalTests: securityResults.totalTests || 0,
+    testsPassed: securityResults.testsPassed || 0,
+    testsFailed: securityResults.testsFailed || 0,
+  };
+}
+
 // =============================================================================
 // FORMATAÇÃO PROMETHEUS
 // =============================================================================
@@ -181,9 +234,10 @@ function extractCoverageMetrics(coverage) {
  * Gera métricas no formato Prometheus
  * @param {Object} jestMetrics - Métricas do Jest
  * @param {Object} coverageMetrics - Métricas de coverage
+ * @param {Object} securityMetrics - Métricas de segurança
  * @returns {string} Texto no formato Prometheus
  */
-function formatPrometheusMetrics(jestMetrics, coverageMetrics) {
+function formatPrometheusMetrics(jestMetrics, coverageMetrics, securityMetrics) {
   const labels = `branch="${config.branchName}",build="${config.buildNumber}"`;
 
   const lines = [
@@ -238,6 +292,40 @@ function formatPrometheusMetrics(jestMetrics, coverageMetrics) {
     '# HELP qa_test_timestamp_seconds Timestamp of last test run',
     '# TYPE qa_test_timestamp_seconds gauge',
     `qa_test_timestamp_seconds{${labels}} ${Math.floor(Date.now() / 1000)}`,
+    '',
+    '# ============ SECURITY METRICS ============',
+    '',
+    '# HELP qa_security_auth_tests_passed Number of auth security tests passed',
+    '# TYPE qa_security_auth_tests_passed gauge',
+    `qa_security_auth_tests_passed{${labels}} ${securityMetrics.authTestsPassed}`,
+    '',
+    '# HELP qa_security_injection_tests_passed Number of injection tests passed',
+    '# TYPE qa_security_injection_tests_passed gauge',
+    `qa_security_injection_tests_passed{${labels}} ${securityMetrics.injectionTestsPassed}`,
+    '',
+    '# HELP qa_security_xss_tests_passed Number of XSS tests passed',
+    '# TYPE qa_security_xss_tests_passed gauge',
+    `qa_security_xss_tests_passed{${labels}} ${securityMetrics.xssTestsPassed}`,
+    '',
+    '# HELP qa_security_rate_limit_tests_passed Number of rate limit tests passed',
+    '# TYPE qa_security_rate_limit_tests_passed gauge',
+    `qa_security_rate_limit_tests_passed{${labels}} ${securityMetrics.rateLimitTestsPassed}`,
+    '',
+    '# HELP qa_security_headers_tests_passed Number of security headers tests passed',
+    '# TYPE qa_security_headers_tests_passed gauge',
+    `qa_security_headers_tests_passed{${labels}} ${securityMetrics.headersTestsPassed}`,
+    '',
+    '# HELP qa_security_total_tests Total number of security tests',
+    '# TYPE qa_security_total_tests gauge',
+    `qa_security_total_tests{${labels}} ${securityMetrics.totalTests}`,
+    '',
+    '# HELP qa_security_tests_passed Total security tests passed',
+    '# TYPE qa_security_tests_passed gauge',
+    `qa_security_tests_passed{${labels}} ${securityMetrics.testsPassed}`,
+    '',
+    '# HELP qa_security_tests_failed Total security tests failed',
+    '# TYPE qa_security_tests_failed gauge',
+    `qa_security_tests_failed{${labels}} ${securityMetrics.testsFailed}`,
   ];
 
   // Prometheus requer newline no final
@@ -309,19 +397,22 @@ async function main() {
   console.log('📖 Lendo arquivos de resultado...');
   const jestResults = readJestResults();
   const coverage = readCoverage();
+  const securityResults = readSecurityResults();
 
   // 2. Extrair métricas
   console.log('📈 Extraindo métricas...');
   const jestMetrics = extractJestMetrics(jestResults);
   const coverageMetrics = extractCoverageMetrics(coverage);
+  const securityMetrics = extractSecurityMetrics(securityResults);
 
   console.log(`   Testes: ${jestMetrics.passed}/${jestMetrics.total} (${jestMetrics.passRate.toFixed(1)}%)`);
   console.log(`   Duração: ${jestMetrics.duration.toFixed(1)}s`);
   console.log(`   Coverage: ${coverageMetrics.lines}% linhas`);
+  console.log(`   Security: ${securityMetrics.testsPassed}/${securityMetrics.totalTests} passed`);
   console.log('');
 
   // 3. Formatar métricas
-  const metrics = formatPrometheusMetrics(jestMetrics, coverageMetrics);
+  const metrics = formatPrometheusMetrics(jestMetrics, coverageMetrics, securityMetrics);
 
   // 4. Enviar para Pushgateway
   console.log('📤 Enviando para Pushgateway...');

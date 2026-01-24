@@ -21,3 +21,6 @@ monitoring/.env
 perf/reports/
 perf/report-*.json
 perf/*.json
+test-results.json
+security-results.json
+coverage/coverage-summary.json
