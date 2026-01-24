@@ -100,7 +100,23 @@ jobs:
       - name: 📊 Full Test Suite + Coverage Report
         run: |
           cd logging-backend
-          npm run test:ci
+          npm run test:ci -- --json --outputFile=../test-results.json
+
+      - name: 📤 Publish Metrics to Prometheus
+        if: always()
+        env:
+          PUSHGATEWAY_URL: ${{ secrets.PUSHGATEWAY_URL }}
+          JEST_RESULTS_FILE: test-results.json
+          COVERAGE_FILE: logging-backend/coverage/coverage-summary.json
+          BRANCH_NAME: ${{ github.ref_name }}
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: |
+          if [ -n "$PUSHGATEWAY_URL" ]; then
+            echo "📊 Publicando métricas no Pushgateway..."
+            node scripts/publish-metrics.js
+          else
+            echo "⚠️ PUSHGATEWAY_URL não configurado - pulando publicação de métricas"
+          fi
 
       - name: ☁️ Upload Coverage Artifact
         if: always()

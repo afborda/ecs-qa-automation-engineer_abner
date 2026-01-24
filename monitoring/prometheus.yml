@@ -1,0 +1,47 @@
+# =============================================================================
+# Prometheus Configuration
+# =============================================================================
+# Configuração do Prometheus para coletar métricas do Pushgateway.
+#
+# Métricas coletadas:
+# - qa_test_pass_rate: Percentual de testes passando
+# - qa_test_duration_seconds: Duração total da suite
+# - qa_test_coverage_percent: Cobertura de código
+# - qa_test_total: Total de testes
+# - qa_test_passed: Testes que passaram
+# - qa_test_failed: Testes que falharam
+# =============================================================================
+
+global:
+  # Intervalo de coleta padrão
+  scrape_interval: 15s
+
+  # Intervalo de avaliação de regras de alerta
+  evaluation_interval: 15s
+
+  # Labels globais anexados a todas as métricas
+  external_labels:
+    project: "qa-automation"
+    environment: "production"
+
+# Arquivos de regras de alerta
+rule_files:
+  - "alert-rules.yml"
+
+# Configuração de scrape
+scrape_configs:
+  # ===========================================================================
+  # Pushgateway - Métricas de CI/CD
+  # ===========================================================================
+  # honor_labels: true → preserva os labels enviados pelo CI (job, branch, etc.)
+  - job_name: "pushgateway"
+    honor_labels: true
+    static_configs:
+      - targets: ["pushgateway:9091"]
+
+  # ===========================================================================
+  # Prometheus Self-Monitoring
+  # ===========================================================================
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]

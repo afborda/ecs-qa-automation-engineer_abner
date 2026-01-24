@@ -36,8 +36,24 @@ jobs:
           API_BASE: https://abnerfonseca.com.br/api
         run: |
           cd logging-backend
-          npm run test:e2e:remote
+          npm run test:e2e:remote -- --json --outputFile=../test-results-e2e.json || true
         continue-on-error: true
+
+      - name: 📤 Publish E2E Metrics to Prometheus
+        if: always()
+        env:
+          PUSHGATEWAY_URL: ${{ secrets.PUSHGATEWAY_URL }}
+          JEST_RESULTS_FILE: test-results-e2e.json
+          JOB_NAME: qa-e2e-remote
+          BRANCH_NAME: ${{ github.ref_name }}
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: |
+          if [ -n "$PUSHGATEWAY_URL" ]; then
+            echo "📊 Publicando métricas E2E no Pushgateway..."
+            node scripts/publish-metrics.js || echo "⚠️ Falha ao publicar métricas"
+          else
+            echo "⚠️ PUSHGATEWAY_URL não configurado"
+          fi
 
       - name: Upload Test Report
         if: always()

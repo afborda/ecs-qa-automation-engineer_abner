@@ -45,7 +45,57 @@ jobs:
           mkdir -p reports/local
           artillery run artillery-local.yml -o reports/local/nightly-local.json
 
-      - name: 📈 Summarize performance
+      - name: � Publish Performance Metrics
+        if: always()
+        env:
+          PUSHGATEWAY_URL: ${{ secrets.PUSHGATEWAY_URL }}
+          JOB_NAME: qa-perf-local
+          BRANCH_NAME: ${{ github.ref_name }}
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: |
+          if [ -n "$PUSHGATEWAY_URL" ] && [ -f "perf/reports/local/nightly-local.json" ]; then
+            echo "📊 Publicando métricas de performance..."
+            # Extrair métricas do Artillery e enviar para Pushgateway
+            node -e "
+              const fs = require('fs');
+              const http = require('http');
+              const https = require('https');
+
+              const report = JSON.parse(fs.readFileSync('perf/reports/local/nightly-local.json'));
+              const agg = report.aggregate || {};
+              const counters = agg.counters || {};
+              const summaries = agg.summaries || {};
+
+              const metrics = [
+                '# HELP qa_perf_requests_total Total requests sent',
+                '# TYPE qa_perf_requests_total counter',
+                'qa_perf_requests_total{job=\"qa-perf-local\",branch=\"\${BRANCH_NAME}\",build=\"\${BUILD_NUMBER}\"} ' + (counters['http.requests'] || 0),
+                '',
+                '# HELP qa_perf_response_time_p50 Response time P50 in ms',
+                '# TYPE qa_perf_response_time_p50 gauge',
+                'qa_perf_response_time_p50{job=\"qa-perf-local\"} ' + (summaries['http.response_time']?.p50 || 0),
+                '',
+                '# HELP qa_perf_response_time_p95 Response time P95 in ms',
+                '# TYPE qa_perf_response_time_p95 gauge',
+                'qa_perf_response_time_p95{job=\"qa-perf-local\"} ' + (summaries['http.response_time']?.p95 || 0),
+                '',
+                '# HELP qa_perf_response_time_p99 Response time P99 in ms',
+                '# TYPE qa_perf_response_time_p99 gauge',
+                'qa_perf_response_time_p99{job=\"qa-perf-local\"} ' + (summaries['http.response_time']?.p99 || 0),
+              ].join('\n');
+
+              const url = new URL(process.env.PUSHGATEWAY_URL + '/metrics/job/qa-perf-local');
+              const client = url.protocol === 'https:' ? https : http;
+
+              const req = client.request(url, { method: 'POST', headers: { 'Content-Type': 'text/plain' } }, (res) => {
+                console.log('Pushgateway response:', res.statusCode);
+              });
+              req.write(metrics);
+              req.end();
+            " || echo "⚠️ Falha ao publicar métricas"
+          fi
+
+      - name: �📈 Summarize performance
         run: node scripts/perf-report.js
 
       - name: 📤 Upload local artifacts
@@ -86,7 +136,53 @@ jobs:
           mkdir -p reports/remote
           artillery run artillery-remote.yml -o reports/remote/nightly-remote.json
 
-      - name: 📤 Upload remote artifacts
+      - name: � Publish Remote Performance Metrics
+        if: always()
+        env:
+          PUSHGATEWAY_URL: ${{ secrets.PUSHGATEWAY_URL }}
+        run: |
+          if [ -n "$PUSHGATEWAY_URL" ] && [ -f "perf/reports/remote/nightly-remote.json" ]; then
+            echo "📊 Publicando métricas de performance remota..."
+            node -e "
+              const fs = require('fs');
+              const http = require('http');
+              const https = require('https');
+
+              const report = JSON.parse(fs.readFileSync('perf/reports/remote/nightly-remote.json'));
+              const agg = report.aggregate || {};
+              const counters = agg.counters || {};
+              const summaries = agg.summaries || {};
+
+              const metrics = [
+                '# HELP qa_perf_remote_requests_total Total requests sent to remote',
+                '# TYPE qa_perf_remote_requests_total counter',
+                'qa_perf_remote_requests_total{job=\"qa-perf-remote\"} ' + (counters['http.requests'] || 0),
+                '',
+                '# HELP qa_perf_remote_response_time_p50 Remote response time P50 in ms',
+                '# TYPE qa_perf_remote_response_time_p50 gauge',
+                'qa_perf_remote_response_time_p50{job=\"qa-perf-remote\"} ' + (summaries['http.response_time']?.p50 || 0),
+                '',
+                '# HELP qa_perf_remote_response_time_p95 Remote response time P95 in ms',
+                '# TYPE qa_perf_remote_response_time_p95 gauge',
+                'qa_perf_remote_response_time_p95{job=\"qa-perf-remote\"} ' + (summaries['http.response_time']?.p95 || 0),
+                '',
+                '# HELP qa_perf_remote_response_time_p99 Remote response time P99 in ms',
+                '# TYPE qa_perf_remote_response_time_p99 gauge',
+                'qa_perf_remote_response_time_p99{job=\"qa-perf-remote\"} ' + (summaries['http.response_time']?.p99 || 0),
+              ].join('\n');
+
+              const url = new URL(process.env.PUSHGATEWAY_URL + '/metrics/job/qa-perf-remote');
+              const client = url.protocol === 'https:' ? https : http;
+
+              const req = client.request(url, { method: 'POST', headers: { 'Content-Type': 'text/plain' } }, (res) => {
+                console.log('Pushgateway response:', res.statusCode);
+              });
+              req.write(metrics);
+              req.end();
+            " || echo "⚠️ Falha ao publicar métricas"
+          fi
+
+      - name: �📤 Upload remote artifacts
         uses: actions/upload-artifact@v4
         with:
           name: perf-remote-nightly

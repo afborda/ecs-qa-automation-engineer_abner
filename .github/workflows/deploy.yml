@@ -43,7 +43,7 @@ jobs:
           port: ${{ secrets.VPS_DEPLOY_PORT }}
           username: deploy
           key: ${{ secrets.VPS_DEPLOY_KEY }}
-          envs: DOCKER_USER
+          envs: DOCKER_USER,GRAFANA_PASSWORD
           script: |
             cd ~/Estudos/SAP
 
@@ -56,10 +56,23 @@ jobs:
             echo "🚀 Subindo com compose (Traefik + trust proxy)..."
             docker-compose up -d --force-recreate --remove-orphans
 
+            echo "📊 Verificando stack de monitoring..."
+            cd ~/Estudos/SAP/monitoring
+
+            # Criar/atualizar .env com credenciais do GitHub Secrets
+            echo "GRAFANA_PASSWORD=${GRAFANA_PASSWORD:-qaadmin123}" > .env
+
+            docker-compose up -d --remove-orphans
+
             echo "🧹 Limpando imagens antigas..."
             docker image prune -f
 
-            echo "✅ Status:"
+            echo "✅ Status Backend:"
+            cd ~/Estudos/SAP
+            docker-compose ps
+
+            echo "✅ Status Monitoring:"
+            cd ~/Estudos/SAP/monitoring
             docker-compose ps
 
       - name: Notify Discord - Deploy Success
