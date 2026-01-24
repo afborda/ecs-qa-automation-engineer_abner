@@ -219,28 +219,29 @@ function formatPrometheusMetrics(jestMetrics, coverageMetrics) {
     '# TYPE qa_test_suites_passed gauge',
     `qa_test_suites_passed{${labels}} ${jestMetrics.suitesPassed}`,
     '',
-    '# HELP qa_test_coverage_lines_percent Line coverage percentage',
-    '# TYPE qa_test_coverage_lines_percent gauge',
-    `qa_test_coverage_lines_percent{${labels}} ${coverageMetrics.lines}`,
+    '# HELP qa_coverage_lines Line coverage percentage',
+    '# TYPE qa_coverage_lines gauge',
+    `qa_coverage_lines{${labels}} ${coverageMetrics.lines}`,
     '',
-    '# HELP qa_test_coverage_statements_percent Statement coverage percentage',
-    '# TYPE qa_test_coverage_statements_percent gauge',
-    `qa_test_coverage_statements_percent{${labels}} ${coverageMetrics.statements}`,
+    '# HELP qa_coverage_statements Statement coverage percentage',
+    '# TYPE qa_coverage_statements gauge',
+    `qa_coverage_statements{${labels}} ${coverageMetrics.statements}`,
     '',
-    '# HELP qa_test_coverage_functions_percent Function coverage percentage',
-    '# TYPE qa_test_coverage_functions_percent gauge',
-    `qa_test_coverage_functions_percent{${labels}} ${coverageMetrics.functions}`,
+    '# HELP qa_coverage_functions Function coverage percentage',
+    '# TYPE qa_coverage_functions gauge',
+    `qa_coverage_functions{${labels}} ${coverageMetrics.functions}`,
     '',
-    '# HELP qa_test_coverage_branches_percent Branch coverage percentage',
-    '# TYPE qa_test_coverage_branches_percent gauge',
-    `qa_test_coverage_branches_percent{${labels}} ${coverageMetrics.branches}`,
+    '# HELP qa_coverage_branches Branch coverage percentage',
+    '# TYPE qa_coverage_branches gauge',
+    `qa_coverage_branches{${labels}} ${coverageMetrics.branches}`,
     '',
     '# HELP qa_test_timestamp_seconds Timestamp of last test run',
     '# TYPE qa_test_timestamp_seconds gauge',
     `qa_test_timestamp_seconds{${labels}} ${Math.floor(Date.now() / 1000)}`,
   ];
 
-  return lines.join('\n');
+  // Prometheus requer newline no final
+  return lines.join('\n') + '\n';
 }
 
 // =============================================================================
