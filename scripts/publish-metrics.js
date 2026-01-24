@@ -49,6 +49,7 @@ const config = {
   branchName: process.env.BRANCH_NAME || process.env.GITHUB_REF_NAME || 'main',
   buildNumber: process.env.BUILD_NUMBER || process.env.GITHUB_RUN_NUMBER || 'local',
   instance: process.env.INSTANCE || 'ci',
+  notifyWebhookUrl: process.env.NOTIFY_WEBHOOK_URL || '',
 };
 
 // =============================================================================
@@ -381,6 +382,45 @@ function pushMetrics(metrics) {
 }
 
 // =============================================================================
+// NOTIFICAÇÃO OPCIONAL
+// =============================================================================
+
+function sendNotification(message) {
+  if (!config.notifyWebhookUrl) {
+    return Promise.resolve();
+  }
+
+  // Discord webhooks aceitam payload simples com "content"
+  const payload = JSON.stringify({ content: message });
+  const url = new URL(config.notifyWebhookUrl);
+
+  const options = {
+    hostname: url.hostname,
+    port: url.port || (url.protocol === 'https:' ? 443 : 80),
+    path: url.pathname + (url.search || ''),
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Content-Length': Buffer.byteLength(payload),
+    },
+  };
+
+  const client = url.protocol === 'https:' ? https : http;
+
+  return new Promise((resolve, reject) => {
+    const req = client.request(options, (res) => {
+      // Best effort: log and move on.
+      res.resume();
+      resolve();
+    });
+
+    req.on('error', () => resolve());
+    req.write(payload);
+    req.end();
+  });
+}
+
+// =============================================================================
 // MAIN
 // =============================================================================
 
@@ -420,6 +460,10 @@ async function main() {
     await pushMetrics(metrics);
     console.log('');
     console.log('✅ Publicação concluída com sucesso!');
+
+    await sendNotification(
+      `Metrics updated: branch=${config.branchName}, build=${config.buildNumber}, job=${config.jobName}`
+    );
   } catch (error) {
     console.error(`❌ Falha ao publicar: ${error.message}`);
 

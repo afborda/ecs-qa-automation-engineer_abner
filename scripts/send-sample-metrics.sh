@@ -92,6 +92,11 @@ RESULT=$?
 
 if [ $RESULT -eq 0 ]; then
     echo "Metrics sent successfully!"
+    if [ -n "$NOTIFY_WEBHOOK_URL" ]; then
+                curl -s -X POST -H 'Content-Type: application/json' \
+                    -d "{\"content\":\"Metrics updated: branch=$BRANCH_NAME, build=$BUILD_NUMBER, job=qa-tests\"}" \
+          "$NOTIFY_WEBHOOK_URL" >/dev/null || true
+    fi
 else
     echo "Failed to send metrics (exit code: $RESULT)"
 fi

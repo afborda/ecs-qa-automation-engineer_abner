@@ -113,6 +113,7 @@ jobs:
           COVERAGE_FILE: logging-backend/coverage/coverage-summary.json
           BRANCH_NAME: ${{ github.ref_name }}
           BUILD_NUMBER: ${{ github.run_number }}
+          NOTIFY_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL_GIT }}
         run: |
           if [ -n "$PUSHGATEWAY_URL" ]; then
             echo "📊 Publicando métricas no Pushgateway..."
