@@ -1,6 +1,6 @@
 const { VALID_UUIDS, MESSAGES } = require('../fixtures/testData');
 const { axios } = require('../helpers/mockHelpers');
-const { pollWithBackoff, sleep } = require('../helpers/pollingHelpers');
+const { pollWithBackoff } = require('../helpers/pollingHelpers');
 const { HTTP_STATUS, TIMEOUTS, PAYLOAD_SIZES, E2E } = require('../fixtures/testConstants');
 const baseURL = process.env.API_BASE || 'https://abnerfonseca.com.br/api';
 const client = axios.create({ baseURL, timeout: TIMEOUTS.REQUEST_TIMEOUT, validateStatus: () => true });
