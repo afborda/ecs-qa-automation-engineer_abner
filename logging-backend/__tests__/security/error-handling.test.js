@@ -26,8 +26,7 @@ describe('Security: Error Handling & Information Leakage', () => {
       // Forçar erro interno enviando payload com tipo inválido
       const res = await request(app)
         .post('/logs')
-        .send({ message: null }) // Null pode causar erro interno
-        
+        .send({ message: null }); // Null pode causar erro interno
 
       // Validar que não há stack trace
       expect(res.body.stack).toBeUndefined();
@@ -44,8 +43,7 @@ describe('Security: Error Handling & Information Leakage', () => {
       // Enviar estrutura inválida
       const res = await request(app)
         .post('/logs')
-        .send({ invalid: 'structure' })
-        
+        .send({ invalid: 'structure' });
 
       // Mensagem deve ser genérica, não expor tipos específicos
       const message = res.body.message || res.body.error || '';
@@ -58,8 +56,7 @@ describe('Security: Error Handling & Information Leakage', () => {
     it('should NOT expose method or function names in errors', async () => {
       // Tentar acessar rota que não existe
       const res = await request(app)
-        .get('/admin/secrets')
-        
+        .get('/admin/secrets');
 
       const responseStr = JSON.stringify(res.body);
 
@@ -77,8 +74,7 @@ describe('Security: Error Handling & Information Leakage', () => {
       const res = await request(app)
         .post('/logs')
         .set('Authorization', 'Bearer invalid.token.here')
-        .send({ message: 'test' })
-        
+        .send({ message: 'test' });
 
       const responseStr = JSON.stringify(res.body) + JSON.stringify(res.headers);
 
@@ -95,8 +91,7 @@ describe('Security: Error Handling & Information Leakage', () => {
       const res = await request(app)
         .post('/logs')
         .set('Authorization', 'Bearer ' + 'x'.repeat(PAYLOAD_SIZES.HEADER_BLOAT))
-        .send({ message: 'test' })
-        
+        .send({ message: 'test' });
 
       const responseStr = JSON.stringify(res.body);
 
@@ -115,8 +110,7 @@ describe('Security: Error Handling & Information Leakage', () => {
       const res = await request(app)
         .post('/logs')
         .set('Authorization', `Bearer ${invalidToken}`)
-        .send({ message: 'test' })
-        
+        .send({ message: 'test' });
 
       // Token não deve aparecer em resposta de erro
       const responseStr = JSON.stringify(res.body);
@@ -130,8 +124,7 @@ describe('Security: Error Handling & Information Leakage', () => {
       // Payload que pode causar erro de parsing
       const res = await request(app)
         .post('/logs')
-        .send({ message: 'x'.repeat(PAYLOAD_SIZES.VERY_LARGE) }) // Payload muito grande
-        
+        .send({ message: 'x'.repeat(PAYLOAD_SIZES.VERY_LARGE) }); // Payload muito grande
 
       const responseStr = JSON.stringify(res.body);
 
@@ -146,8 +139,7 @@ describe('Security: Error Handling & Information Leakage', () => {
     it('should NOT expose internal module names or versions', async () => {
       // Request que cause erro
       const res = await request(app)
-        .get('/invalid-route')
-        
+        .get('/invalid-route');
 
       const responseStr = JSON.stringify(res.body);
 
@@ -163,8 +155,7 @@ describe('Security: Error Handling & Information Leakage', () => {
       // Erro que poderia vazar info do sistema
       const res = await request(app)
         .post('/logs')
-        .send({ invalid: true })
-        
+        .send({ invalid: true });
 
       const responseStr = JSON.stringify(res.body);
 
@@ -183,8 +174,7 @@ describe('Security: Error Handling & Information Leakage', () => {
     it('should return consistent error response format', async () => {
       const res = await request(app)
         .post('/logs')
-        .send({ invalid: true })
-        
+        .send({ invalid: true });
 
       // Deve ter estrutura previsível
       expect(res.body).toBeDefined();
@@ -207,8 +197,7 @@ describe('Security: Error Handling & Information Leakage', () => {
 
       const res = await request(app)
         .post('/logs')
-        .send(sensitiveData)
-        
+        .send(sensitiveData);
 
       const responseStr = JSON.stringify(res.body);
 
@@ -224,8 +213,7 @@ describe('Security: Error Handling & Information Leakage', () => {
       const resBad = await request(app)
         .post('/logs')
         .set('Authorization', `Bearer ${validToken}`)
-        .send(null)
-        
+        .send(null);
 
       // A API pode aceitar (202) ou validar (400/415/422) dependendo da lógica; ambos são válidos
       expect([
@@ -240,8 +228,7 @@ describe('Security: Error Handling & Information Leakage', () => {
       const res401 = await request(app)
         .post('/logs')
         .set('Authorization', 'Bearer invalid')
-        .send({ message: 'test' })
-        
+        .send({ message: 'test' });
 
       // Em ambiente de teste, JWT pode estar mockado e permitir 202; em prod deve ser 401
       expect([HTTP_STATUS.ACCEPTED, HTTP_STATUS.UNAUTHORIZED]).toContain(res401.status);
