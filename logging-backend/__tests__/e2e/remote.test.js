@@ -1,13 +1,26 @@
 const { VALID_UUIDS, MESSAGES } = require('../fixtures/testData');
-const {axios} = require('../helpers/mockHelpers');
+const { axios } = require('../helpers/mockHelpers');
+const { pollWithBackoff, sleep } = require('../helpers/pollingHelpers');
 const { HTTP_STATUS, TIMEOUTS, PAYLOAD_SIZES, E2E } = require('../fixtures/testConstants');
 const baseURL = process.env.API_BASE || 'https://abnerfonseca.com.br/api';
 const client = axios.create({ baseURL, timeout: TIMEOUTS.REQUEST_TIMEOUT, validateStatus: () => true });
 
+// Retry helper para lidar com 429 (rate limit) no ambiente remoto
+const withRetry429 = (fn, options = {}) => {
+  const { maxAttempts = 6, initialDelayMs = 150 } = options;
+  return pollWithBackoff(async () => {
+    const res = await fn();
+    if (res.status === HTTP_STATUS.TOO_MANY_REQUESTS) {
+      throw new Error('Rate limited');
+    }
+    return res;
+  }, { maxAttempts, initialDelayMs });
+};
+
 describe('E2E Tests - Remote API', () => {
   describe('Authentication Flow', () => {
     it('should generate valid token via POST /auth/token', async () => {
-      const res = await client.post('/auth/token');
+      const res = await withRetry429(() => client.post('/auth/token'));
       expect(res.status).toBe(HTTP_STATUS.OK);
       expect(res.data).toHaveProperty('token');
       expect(typeof res.data.token).toBe('string');
@@ -16,13 +29,13 @@ describe('E2E Tests - Remote API', () => {
 
   describe('Log Submission & Polling', () => {
     it('complete flow: token → POST /logs → polling until PROCESSED', async () => {
-      const tokenRes = await client.post('/auth/token');
+      const tokenRes = await withRetry429(() => client.post('/auth/token'));
       expect(tokenRes.status).toBe(HTTP_STATUS.OK);
       const token = tokenRes.data.token;
 
-      const logRes = await client.post('/logs', { message: MESSAGES.simple }, {
+      const logRes = await withRetry429(() => client.post('/logs', { message: MESSAGES.simple }, {
         headers: { Authorization: `Bearer ${token}` }
-      });
+      }));
       expect(logRes.status).toBe(HTTP_STATUS.ACCEPTED);
       expect(logRes.data).toHaveProperty('correlationId');
       const correlationId = logRes.data.correlationId;
@@ -43,19 +56,19 @@ describe('E2E Tests - Remote API', () => {
     }, TIMEOUTS.REMOTE_WORKFLOW_TIMEOUT);
 
     it('should return 401 without token', async () => {
-      const res = await client.post('/logs', { message: MESSAGES.simple });
+      const res = await withRetry429(() => client.post('/logs', { message: MESSAGES.simple }));
       expect(res.status).toBe(HTTP_STATUS.UNAUTHORIZED);
       expect(res.data).toHaveProperty('error');
     });
 
     it('should reject payload > 500 characters', async () => {
-      const tokenRes = await client.post('/auth/token');
+      const tokenRes = await withRetry429(() => client.post('/auth/token'));
       const token = tokenRes.data.token;
 
       const bigMessage = 'A'.repeat(PAYLOAD_SIZES.LARGE_MESSAGE);
-      const res = await client.post('/logs', { message: bigMessage }, {
+      const res = await withRetry429(() => client.post('/logs', { message: bigMessage }, {
         headers: { Authorization: `Bearer ${token}` }
-      });
+      }));
 
       if (res.status === HTTP_STATUS.ACCEPTED) {
         const correlationId = res.data.correlationId;
@@ -68,7 +81,7 @@ describe('E2E Tests - Remote API', () => {
 
   describe('Metrics Endpoint', () => {
     it('should return object with expected properties', async () => {
-      const res = await client.get('/metrics');
+      const res = await withRetry429(() => client.get('/metrics'));
       expect(res.status).toBe(HTTP_STATUS.OK);
       expect(res.data).toHaveProperty('queued');
       expect(res.data).toHaveProperty('processed');
@@ -81,7 +94,7 @@ describe('E2E Tests - Remote API', () => {
 
   describe('Not Found Handling', () => {
     it('should return 404 for invalid correlation ID', async () => {
-      const res = await client.get(`/logs/${VALID_UUIDS.nonExistent}`);
+      const res = await withRetry429(() => client.get(`/logs/${VALID_UUIDS.nonExistent}`), { maxAttempts: 4, initialDelayMs: 200 });
       expect([HTTP_STATUS.NOT_FOUND, HTTP_STATUS.OK]).toContain(res.status);
     });
   });
