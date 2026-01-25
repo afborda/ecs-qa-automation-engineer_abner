@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DOCKER_USER: ${{ secrets.DOCKER_HUB_USERNAME }}
-
+      GRAFANA_PASSWORD: ${{ secrets.GRAFANA_PASSWORD }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
