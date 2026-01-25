@@ -160,6 +160,8 @@ jobs:
             cd ~/Estudos/SAP/monitoring
             [ -z "$GRAFANA_PASSWORD" ] && { echo "❌ GRAFANA_PASSWORD missing"; exit 1; }
             echo "GRAFANA_PASSWORD=${GRAFANA_PASSWORD}" > .env
+            echo "🧹 Removing existing monitoring containers to avoid name conflicts..."
+            docker compose rm -f -s pushgateway grafana prometheus 2>/dev/null || true
             docker compose pull
             docker compose up -d --force-recreate
 
