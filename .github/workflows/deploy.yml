@@ -116,11 +116,24 @@ jobs:
       - name: Health check - Backend API
         run: |
           echo "🏥 Checking backend health..."
-          if ! curl --retry 10 --retry-delay 3 --retry-connrefused --fail -s https://abnerfonseca.com.br/api/metrics > /dev/null; then
-            echo "❌ Backend health check failed - API not responding"
+          echo "   Target: https://abnerfonseca.com.br/api/metrics"
+          echo "   Retries: 20 attempts with 5s delay (100s total timeout)"
+          
+          for attempt in {1..20}; do
+            echo "   Attempt $attempt/20..."
+            if curl --retry 0 --connect-timeout 5 --max-time 5 -f -s https://abnerfonseca.com.br/api/metrics > /dev/null 2>&1; then
+              echo "✅ Backend is healthy and responding"
+              exit 0
+            fi
+            if [ $attempt -lt 20 ]; then
+              sleep 5
+            fi
+          done
+          
+          echo "❌ Backend health check failed after 100s - API not responding"
+          echo "   Last attempt response:"
+          curl -v https://abnerfonseca.com.br/api/metrics 2>&1 | head -30
             exit 1
-          fi
-          echo "✅ Backend is healthy and responding"
 
       - name: Collect diagnostics on failure
         if: failure()
