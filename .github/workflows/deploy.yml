@@ -79,6 +79,9 @@ jobs:
           script: |
             cd ~/Estudos/SAP
 
+            echo "🌐 Ensuring Traefik network exists..."
+            docker network ls | grep -q "site_traefik-network" || docker network create site_traefik-network
+
             echo "⬇️ Pulling latest backend image..."
             docker compose pull logging-api
 
@@ -113,12 +116,71 @@ jobs:
             echo "🧹 Cleaning old images..."
             docker image prune -f
 
+      - name: Health check - Monitoring endpoints
+        run: |
+          echo "🔎 Checking monitoring endpoints (Grafana/Prometheus/Pushgateway)..."
+          check() {
+            url="$1"; name="$2"; attempts=15; delay=4
+            echo "   [$name] $url"
+            for i in $(seq 1 $attempts); do
+              code=$(curl -s -o /dev/null -w "%{http_code}" "$url" || echo 000)
+              echo "      Attempt $i/$attempts -> HTTP $code"
+              if [ "$code" = "200" ] || [ "$code" = "302" ]; then
+                echo "   ✅ $name OK"
+                return 0
+              fi
+              sleep $delay
+            done
+            echo "   ❌ $name unhealthy (got $code)"
+            return 1
+          }
+
+          failed=0
+          check "https://abnerfonseca.com.br/grafana/api/health" "Grafana" || failed=1
+          check "https://abnerfonseca.com.br/prometheus/" "Prometheus" || failed=1
+          check "https://abnerfonseca.com.br/push/" "Pushgateway" || failed=1
+
+          if [ "$failed" = "1" ]; then
+            echo "⚠️ Monitoring seems down (404/timeout). Will attempt remote restart."
+            exit 1
+          fi
+          echo "✅ Monitoring endpoints healthy"
+
+      - name: Restart monitoring on VPS if unhealthy
+        if: failure()
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.VPS_DEPLOY_HOST }}
+          port: ${{ secrets.VPS_DEPLOY_PORT }}
+          username: deploy
+          key: ${{ secrets.VPS_DEPLOY_KEY }}
+          envs: GRAFANA_PASSWORD
+          script: |
+            echo "🔄 Restarting monitoring stack on VPS..."
+            cd ~/Estudos/SAP/monitoring
+            [ -z "$GRAFANA_PASSWORD" ] && { echo "❌ GRAFANA_PASSWORD missing"; exit 1; }
+            echo "GRAFANA_PASSWORD=${GRAFANA_PASSWORD}" > .env
+            docker compose pull
+            docker compose up -d --force-recreate
+
+      - name: Re-check Monitoring endpoints
+        if: failure()
+        run: |
+          echo "🔎 Re-checking monitoring endpoints after restart..."
+          for url in \
+            https://abnerfonseca.com.br/grafana/api/health \
+            https://abnerfonseca.com.br/prometheus/ \
+            https://abnerfonseca.com.br/push/ ; do
+            echo "   $url"
+            curl -s -o /dev/null -w "%{http_code}" "$url"
+          done
+
       - name: Health check - Backend API
         run: |
           echo "🏥 Checking backend health..."
           echo "   Target: https://abnerfonseca.com.br/api/metrics"
           echo "   Retries: 20 attempts with 5s delay (100s total timeout)"
-          
+
           for attempt in {1..20}; do
             echo "   Attempt $attempt/20..."
             if curl --retry 0 --connect-timeout 5 --max-time 5 -f -s https://abnerfonseca.com.br/api/metrics > /dev/null 2>&1; then
@@ -129,7 +191,7 @@ jobs:
               sleep 5
             fi
           done
-          
+
           echo "❌ Backend health check failed after 100s - API not responding"
           echo "   Last attempt response:"
           curl -v https://abnerfonseca.com.br/api/metrics 2>&1 | head -30
