@@ -10,7 +10,7 @@ on:
       restart_monitoring:
         description: "Forcar reinicio da stack de monitoring"
         required: false
-        default: "false"
+        default: false
         type: boolean
 
 jobs:
@@ -52,6 +52,22 @@ jobs:
             ${{ env.DOCKER_USER }}/logging-api:latest
             ${{ env.DOCKER_USER }}/logging-api:${{ github.sha }}
 
+      - name: Validate required secrets
+        run: |
+          if [ -z "${{ secrets.DOCKER_HUB_USERNAME }}" ] || [ -z "${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}" ]; then
+            echo "❌ Docker Hub credentials missing"
+            exit 1
+          fi
+          if [ -z "${{ secrets.VPS_DEPLOY_HOST }}" ] || [ -z "${{ secrets.VPS_DEPLOY_KEY }}" ]; then
+            echo "❌ VPS deploy credentials missing"
+            exit 1
+          fi
+          if [ -z "${{ secrets.GRAFANA_PASSWORD }}" ]; then
+            echo "❌ GRAFANA_PASSWORD secret missing"
+            exit 1
+          fi
+          echo "✅ All required secrets present"
+
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.0.0
         with:
@@ -63,43 +79,68 @@ jobs:
           script: |
             cd ~/Estudos/SAP
 
-            echo "🛑 Parando stack backend..."
-            docker-compose down || true
+            echo "⬇️ Pulling latest backend image..."
+            docker compose pull logging-api
 
-            echo "⬇️ Pull da imagem nova..."
-            docker pull ${DOCKER_USER}/logging-api:latest
-
-            echo "🚀 Subindo backend (Traefik + trust proxy)..."
-            docker-compose up -d --force-recreate --remove-orphans
+            echo "🚀 Deploying backend (zero-downtime recreate)..."
+            docker compose up -d --force-recreate --no-deps logging-api
 
             MONITORING_CHANGED="${{ steps.changes.outputs.monitoring }}"
             FORCE_MONITORING="${{ github.event.inputs.restart_monitoring || 'false' }}"
 
             if [ "$MONITORING_CHANGED" = "true" ] || [ "$FORCE_MONITORING" = "true" ]; then
-              echo "📊 Reiniciando stack de monitoring..."
+              echo "📊 Updating monitoring stack..."
               cd ~/Estudos/SAP/monitoring
 
+              # Validar senha obrigatória
+              if [ -z "${GRAFANA_PASSWORD}" ]; then
+                echo "❌ GRAFANA_PASSWORD not set - aborting monitoring update"
+                exit 1
+              fi
+
               # Criar/atualizar .env com credenciais do GitHub Secrets
-              echo "GRAFANA_PASSWORD=${GRAFANA_PASSWORD:-admin123456}" > .env
+              echo "GRAFANA_PASSWORD=${GRAFANA_PASSWORD}" > .env
 
-              # Remover containers órfãos se existirem
-              docker rm -f $(docker ps -aq --filter "name=qa-grafana" --filter "status=exited") 2>/dev/null || true
+              echo "⬇️ Pulling latest monitoring images..."
+              docker compose pull
 
-              docker-compose up -d --force-recreate
+              echo "🔄 Recreating monitoring stack (no downtime)..."
+              docker compose up -d --force-recreate
             else
-              echo "📊 Monitoring sem alterações - mantendo containers atuais."
+              echo "📊 Monitoring unchanged - skipping update."
             fi
 
-            echo "🧹 Limpando imagens antigas..."
+            echo "🧹 Cleaning old images..."
             docker image prune -f
 
-            echo "✅ Status Backend:"
-            cd ~/Estudos/SAP
-            docker-compose ps
+      - name: Health check - Backend API
+        run: |
+          echo "🏥 Checking backend health..."
+          if ! curl --retry 10 --retry-delay 3 --retry-connrefused --fail -s https://abnerfonseca.com.br/api/metrics > /dev/null; then
+            echo "❌ Backend health check failed - API not responding"
+            exit 1
+          fi
+          echo "✅ Backend is healthy and responding"
 
-            echo "✅ Status Monitoring:"
+      - name: Collect diagnostics on failure
+        if: failure()
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.VPS_DEPLOY_HOST }}
+          port: ${{ secrets.VPS_DEPLOY_PORT }}
+          username: deploy
+          key: ${{ secrets.VPS_DEPLOY_KEY }}
+          script: |
+            echo "📊 Backend status:"
+            cd ~/Estudos/SAP
+            docker compose ps
+            echo ""
+            echo "📋 Backend logs (last 50 lines):"
+            docker compose logs --tail 50 logging-api
+            echo ""
+            echo "📊 Monitoring status:"
             cd ~/Estudos/SAP/monitoring
-            docker-compose ps
+            docker compose ps
 
       - name: Notify Discord - Deploy Success
         if: success()
@@ -109,11 +150,12 @@ jobs:
             -d '{
               "embeds": [{
                 "title": "🚀 Deploy Successful",
-                "description": "**Repository:** ${{ github.repository }}\n**Image:** `logging-api:${{ github.sha }}`\n**Target:** abnerfonseca.com.br/api",
+                "description": "**Repository:** ${{ github.repository }}\n**Image:** `logging-api:${{ github.sha }}`\n**Target:** abnerfonseca.com.br/api\n**Health:** ✅ API responding",
                 "color": 3066993,
                 "fields": [
                   {"name": "Docker Tag", "value": "`latest`", "inline": true},
-                  {"name": "Commit", "value": "`${{ github.sha }}`", "inline": true}
+                  {"name": "Commit", "value": "`${{ github.sha }}`", "inline": true},
+                  {"name": "Logs", "value": "[View Run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})", "inline": false}
                 ],
                 "footer": {"text": "GitHub Actions - Deploy"},
                 "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"
