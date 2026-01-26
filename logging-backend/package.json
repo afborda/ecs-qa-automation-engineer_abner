@@ -8,7 +8,6 @@
     "seed": "node seed.js",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-
     "test": "ENABLE_WORKER_FOR_TESTS=true RATE_LIMIT=500 jest --testPathIgnorePatterns=async-worker --coverage && ENABLE_WORKER_FOR_TESTS=true jest --testPathPatterns=async-worker --runInBand --forceExit",
     "test:unit": "jest --testPathPatterns=unit",
     "test:integration": "jest --testPathPatterns=integration --testPathIgnorePatterns=async-worker && ENABLE_WORKER_FOR_TESTS=true jest --testPathPatterns=async-worker --runInBand --forceExit",

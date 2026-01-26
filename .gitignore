@@ -1,6 +1,6 @@
 # Documentation and AI instructions
 .github/copilot-instructions.md
-doc/
+coverage
 
 # OS files
 .DS_Store
