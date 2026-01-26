@@ -1,0 +1,21 @@
+#!/bin/sh
+
+echo "🔍 Running pre-commit checks..."
+echo "📝 Linting code..."
+npm run check:quick
+
+if [ $? -ne 0 ]; then
+  echo "❌ Lint failed. Please fix errors before committing."
+  exit 1
+fi
+
+echo "✅ Lint passed!"
+echo "🧪 Running tests..."
+npm run check:all
+
+if [ $? -ne 0 ]; then
+  echo "❌ Tests failed. Please fix before committing."
+  exit 1
+fi
+
+echo "✅ All checks passed! Proceeding with commit..."

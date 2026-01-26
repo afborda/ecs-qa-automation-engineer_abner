@@ -1,12 +1,4 @@
-/**
- * Mock Data Fixtures
- * Configurações e dados para mocks de JWT e autenticação
- * Separado de funções (helpers) e dados genéricos (testData.js)
- */
 
-// ============================================
-// TEST MESSAGES (Mensagens de teste centralizadas)
-// ============================================
 const TEST_MESSAGES = {
   auth: {
     withoutAuth: 'test without auth',
@@ -27,7 +19,7 @@ const TEST_MESSAGES = {
 };
 
 // ============================================
-// MOCK TOKENS (para testes com JWT mockado)
+// MOCK TOKENS (for tests with mocked JWT)
 // ============================================
 const MOCK_TOKENS = {
   valid: 'valid.jwt.token',
@@ -37,27 +29,27 @@ const MOCK_TOKENS = {
 };
 
 // ============================================
-// REAL JWT CONFIG (para testes de segurança)
+// REAL JWT CONFIG (for security tests)
 // ============================================
 const REAL_JWT_CONFIG = {
-  // Secret usada pelo backend (hardcoded em index.js)
+  // Secret used by backend (hardcoded in index.js)
   secret: 'qa-secret',
 
-  // Opções de expiração para diferentes cenários
+  // Expiration options for different scenarios
   expiry: {
-    valid: '1h',        // Token válido por 1 hora
-    short: '1s',        // Token que expira rápido (para testes de expiração)
-    expired: '-1s',     // Token já expirado
+    valid: '1h',        // Token valid for 1 hour
+    short: '1s',        // Token that expires quickly (for expiration tests)
+    expired: '-1s',     // Already expired token
   },
 
-  // Payloads para testes de segurança
+  // Payloads for security tests
   payloads: {
     validUser: { user: 'qa' },
     adminUser: { user: 'admin' },
     tamperedAdmin: { user: 'admin', iat: 9999999999 },
   },
 
-  // Tokens malformados para testes de validação
+  // Malformed tokens for validation tests
   malformedTokens: {
     notJwt: 'not-a-valid-jwt',
     twoPartsOnly: 'header.payload',

@@ -1,10 +1,4 @@
-/**
- * E2E Tests - Local Environment
- *
- * ⚠️ ATENÇÃO: Habilitar worker para testar fluxo completo
- */
 
-// Habilitar worker antes de importar app
 process.env.ENABLE_WORKER_FOR_TESTS = 'true';
 delete process.env.DISABLE_WORKER;
 
@@ -175,10 +169,10 @@ describe('E2E Tests - Local Environment', () => {
 
       const token = tokenRes.body.token;
 
-      // Rate limit configurado via env
+      // Rate limit configured via env
       const rateLimit = parseInt(process.env.RATE_LIMIT || RATE_LIMITING.REQUESTS_PER_MINUTE);
-      // Se o RATE_LIMIT estiver muito alto (ex.: 500), este teste exigiria >500 requisições
-      // e pode estourar o timeout. Nesse caso, pulamos de forma explícita.
+      // If RATE_LIMIT is too high (e.g., 500), this test would require >500 requests
+      // and may timeout. In that case, we skip explicitly.
       if (rateLimit > 150) {
         console.log(`High RATE_LIMIT (${rateLimit}) - skipping rate limit test`);
         return;

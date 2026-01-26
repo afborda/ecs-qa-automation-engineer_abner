@@ -16,44 +16,44 @@ const HTTP_STATUS = {
 };
 
 // ============================================
-// Timeouts (em milissegundos)
+// Timeouts (in milliseconds)
 // ============================================
 const TIMEOUTS = {
   // JWT expiration
-  JWT_EXPIRY_WAIT: 2000,      // Aguardar 2s (token com 1s expira)
-  JWT_EXPIRY_FULL_WAIT: 6000, // Aguardar 6s (token de 5s expira)
-  JWT_EXPIRY_TEST_TIMEOUT: 5000, // Timeout do teste
+  JWT_EXPIRY_WAIT: 2000,      // Wait 2s (token with 1s expires)
+  JWT_EXPIRY_FULL_WAIT: 6000, // Wait 6s (5s token expires)
+  JWT_EXPIRY_TEST_TIMEOUT: 5000, // Test timeout
 
   // Server startup
-  SERVER_START_WAIT: 3000,    // 3s para servidor iniciar
+  SERVER_START_WAIT: 3000,    // 3s for server to start
 
   // E2E Polling
-  POLLING_INTERVAL: 500,      // Intervalo entre tentativas de polling
-  POLLING_MAX_WAIT: 15000,    // Timeout máximo para polling
-  WORKER_PROCESSING_DELAY: 2000, // Delay do worker processar logs
+  POLLING_INTERVAL: 500,      // Interval between polling attempts
+  POLLING_MAX_WAIT: 15000,    // Maximum timeout for polling
+  WORKER_PROCESSING_DELAY: 2000, // Delay for worker processing logs
 
   // Request timeouts
-  REQUEST_TIMEOUT: 30000,     // 30s padrão
-  SLOW_TEST_TIMEOUT: 60000,   // 60s para testes lentos
-  E2E_WORKFLOW_TIMEOUT: 10000, // 10s para fluxo E2E completo
-  E2E_CONCURRENT_TIMEOUT: 20000, // 20s para testes concorrentes
-  REMOTE_WORKFLOW_TIMEOUT: 20000, // 20s para testes remotos
+  REQUEST_TIMEOUT: 30000,     // 30s default
+  SLOW_TEST_TIMEOUT: 60000,   // 60s for slow tests
+  E2E_WORKFLOW_TIMEOUT: 10000, // 10s for complete E2E flow
+  E2E_CONCURRENT_TIMEOUT: 20000, // 20s for concurrent tests
+  REMOTE_WORKFLOW_TIMEOUT: 20000, // 20s for remote tests
 };
 
 // ============================================
 // Payload Sizes
 // ============================================
 const PAYLOAD_SIZES = {
-  MAX_MESSAGE: 500,           // Máximo de caracteres por mensagem
-  LARGE_MESSAGE: 501,         // Acima do limite
+  MAX_MESSAGE: 500,           // Maximum characters per message
+  LARGE_MESSAGE: 501,         // Above the limit
   EMPTY: 0,
   SMALL: 50,
   MEDIUM: 250,
-  HEADER_BLOAT: 200,          // Usado para inflar headers (Ex.: Authorization)
-  VERY_LARGE: 10000,          // Payload muito grande para testes de robustez
-  XSS_PAYLOAD_REPEAT: 100,    // Repetições para payloads XSS (<script> loops)
-  XSS_PAYLOAD_SHORT: 50,      // Repetições curtas para XSS (imagens, eventos)
-  EXTREME_PAYLOAD: 1000000,   // Payload extremo (1M chars) para testes de limite HTTP
+  HEADER_BLOAT: 200,          // Used to inflate headers (e.g., Authorization)
+  VERY_LARGE: 10000,          // Very large payload for robustness tests
+  XSS_PAYLOAD_REPEAT: 100,    // Repetitions for XSS payloads (<script> loops)
+  XSS_PAYLOAD_SHORT: 50,      // Short repetitions for XSS (images, events)
+  EXTREME_PAYLOAD: 1000000,   // Extreme payload (1M chars) for HTTP limit tests
 };
 
 // ============================================
@@ -61,28 +61,28 @@ const PAYLOAD_SIZES = {
 // ============================================
 const RATE_LIMITING = {
   REQUESTS_PER_MINUTE: 100,   // Default rate limit
-  CI_RATE_LIMIT: 500,         // Rate limit para testes CI
-  TEST_DELAY_BETWEEN_REQUESTS: 100, // ms entre requests
-  OVER_LIMIT_EXCESS: 10,      // Requests acima do limite para teste
+  CI_RATE_LIMIT: 500,         // Rate limit for CI tests
+  TEST_DELAY_BETWEEN_REQUESTS: 100, // ms between requests
+  OVER_LIMIT_EXCESS: 10,      // Requests above limit for testing
 };
 
 // ============================================
 // E2E Constants
 // ============================================
 const E2E = {
-  POLLING_MAX_ATTEMPTS: 10,   // Máximo de tentativas de polling
-  CONCURRENT_REQUESTS: 5,     // Número de requests simultâneos
-  RANDOM_JITTER_MAX: 500,     // Jitter aleatório máximo (ms)
+  POLLING_MAX_ATTEMPTS: 10,   // Maximum polling attempts
+  CONCURRENT_REQUESTS: 5,     // Number of simultaneous requests
+  RANDOM_JITTER_MAX: 500,     // Maximum random jitter (ms)
 };
 
 // ============================================
 // JWT Token Timing
 // ============================================
 const JWT_TIMING = {
-  TOKEN_LIFETIME_SHORT: '1s',    // Para testes rápidos
-  TOKEN_LIFETIME_NORMAL: '5s',   // Lifetime padrão do backend
-  TOKEN_LIFETIME_LONG: '1h',     // Para testes gerais
-  TOKEN_EXPIRED: '-1s',          // Já expirado
+  TOKEN_LIFETIME_SHORT: '1s',    // For quick tests
+  TOKEN_LIFETIME_NORMAL: '5s',   // Backend default lifetime
+  TOKEN_LIFETIME_LONG: '1h',     // For general tests
+  TOKEN_EXPIRED: '-1s',          // Already expired
 };
 
 module.exports = {

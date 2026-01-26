@@ -4,28 +4,28 @@
  * Publish Metrics to Prometheus Pushgateway
  * =============================================================================
  *
- * Este script lê os resultados do Jest (JSON) e coverage (JSON), transforma
- * em métricas Prometheus e envia para o Pushgateway.
+ * This script reads Jest results (JSON) and coverage (JSON), transforms
+ * them into Prometheus metrics and sends to the Pushgateway.
  *
- * COMO FUNCIONA:
- * 1. Lê o arquivo de resultado do Jest (--json --outputFile=results.json)
- * 2. Lê o arquivo de coverage (coverage/coverage-summary.json)
- * 3. Extrai métricas: total, passed, failed, duration, coverage
- * 4. Formata no padrão Prometheus (texto plano)
- * 5. Envia via HTTP POST para o Pushgateway
+ * HOW IT WORKS:
+ * 1. Reads Jest result file (--json --outputFile=results.json)
+ * 2. Reads coverage file (coverage/coverage-summary.json)
+ * 3. Extracts metrics: total, passed, failed, duration, coverage
+ * 4. Formats in Prometheus format (plain text)
+ * 5. Sends via HTTP POST to Pushgateway
  *
- * USO:
- *   node scripts/publish-metrics.js [opções]
+ * USAGE:
+ *   node scripts/publish-metrics.js [options]
  *
- * OPÇÕES (via env):
- *   PUSHGATEWAY_URL   - URL do Pushgateway (default: http://localhost:9091)
- *   JEST_RESULTS_FILE - Arquivo JSON do Jest (default: test-results.json)
- *   COVERAGE_FILE     - Arquivo de coverage (default: coverage/coverage-summary.json)
- *   JOB_NAME          - Nome do job no Prometheus (default: qa-tests)
- *   BRANCH_NAME       - Nome da branch (default: main)
- *   BUILD_NUMBER      - Número do build (default: local)
+ * OPTIONS (via env):
+ *   PUSHGATEWAY_URL   - Pushgateway URL (default: http://localhost:9091)
+ *   JEST_RESULTS_FILE - Jest JSON file (default: test-results.json)
+ *   COVERAGE_FILE     - Coverage file (default: coverage/coverage-summary.json)
+ *   JOB_NAME          - Job name in Prometheus (default: qa-tests)
+ *   BRANCH_NAME       - Branch name (default: main)
+ *   BUILD_NUMBER      - Build number (default: local)
  *
- * EXEMPLO:
+ * EXAMPLE:
  *   PUSHGATEWAY_URL=http://vps:9091 BRANCH_NAME=develop node scripts/publish-metrics.js
  *
  * =============================================================================
@@ -37,7 +37,7 @@ const http = require('http');
 const https = require('https');
 
 // =============================================================================
-// CONFIGURAÇÃO
+// CONFIGURATION
 // =============================================================================
 
 const config = {
@@ -53,18 +53,18 @@ const config = {
 };
 
 // =============================================================================
-// LEITURA DE ARQUIVOS
+// FILE READING
 // =============================================================================
 
 /**
- * Lê o arquivo JSON de resultados do Jest
- * @returns {Object} Resultados do Jest ou objeto vazio
+ * Reads the Jest results JSON file
+ * @returns {Object} Jest results or empty object
  */
 function readJestResults() {
   const filePath = path.resolve(process.cwd(), config.jestResultsFile);
 
   if (!fs.existsSync(filePath)) {
-    console.warn(`⚠️  Arquivo Jest não encontrado: ${filePath}`);
+    console.warn(`⚠️  Jest file not found: ${filePath}`);
     return null;
   }
 
@@ -72,20 +72,20 @@ function readJestResults() {
     const content = fs.readFileSync(filePath, 'utf-8');
     return JSON.parse(content);
   } catch (error) {
-    console.error(`❌ Erro ao ler Jest results: ${error.message}`);
+    console.error(`❌ Error reading Jest results: ${error.message}`);
     return null;
   }
 }
 
 /**
- * Lê o arquivo JSON de coverage do Jest
- * @returns {Object} Coverage ou null
+ * Reads the Jest coverage JSON file
+ * @returns {Object} Coverage or null
  */
 function readCoverage() {
   const filePath = path.resolve(process.cwd(), config.coverageFile);
 
   if (!fs.existsSync(filePath)) {
-    console.warn(`⚠️  Arquivo coverage não encontrado: ${filePath}`);
+    console.warn(`⚠️  Coverage file not found: ${filePath}`);
     return null;
   }
 
@@ -93,20 +93,20 @@ function readCoverage() {
     const content = fs.readFileSync(filePath, 'utf-8');
     return JSON.parse(content);
   } catch (error) {
-    console.error(`❌ Erro ao ler coverage: ${error.message}`);
+    console.error(`❌ Error reading coverage: ${error.message}`);
     return null;
   }
 }
 
 /**
- * Lê o arquivo JSON de resultados de segurança
- * @returns {Object} Security results ou null
+ * Reads the security results JSON file
+ * @returns {Object} Security results or null
  */
 function readSecurityResults() {
   const filePath = path.resolve(process.cwd(), config.securityResultsFile);
 
   if (!fs.existsSync(filePath)) {
-    console.warn(`⚠️  Arquivo security não encontrado: ${filePath}`);
+    console.warn(`⚠️  Security file not found: ${filePath}`);
     return null;
   }
 
@@ -114,19 +114,19 @@ function readSecurityResults() {
     const content = fs.readFileSync(filePath, 'utf-8');
     return JSON.parse(content);
   } catch (error) {
-    console.error(`❌ Erro ao ler security results: ${error.message}`);
+    console.error(`❌ Error reading security results: ${error.message}`);
     return null;
   }
 }
 
 // =============================================================================
-// EXTRAÇÃO DE MÉTRICAS
+// METRICS EXTRACTION
 // =============================================================================
 
 /**
- * Extrai métricas do resultado do Jest
- * @param {Object} jestResults - Resultado do Jest
- * @returns {Object} Métricas extraídas
+ * Extracts metrics from Jest result
+ * @param {Object} jestResults - Jest result
+ * @returns {Object} Extracted metrics
  */
 function extractJestMetrics(jestResults) {
   if (!jestResults) {
@@ -147,12 +147,12 @@ function extractJestMetrics(jestResults) {
   const failed = jestResults.numFailedTests || 0;
   const skipped = jestResults.numPendingTests || 0;
 
-  // Duração em segundos (Jest retorna em ms)
+  // Duration in seconds (Jest returns in ms)
   const startTime = jestResults.startTime || Date.now();
   const endTime = Date.now();
   const duration = (endTime - startTime) / 1000;
 
-  // Taxa de sucesso
+  // Pass rate
   const passRate = total > 0 ? (passed / total) * 100 : 0;
 
   // Suites
@@ -172,9 +172,9 @@ function extractJestMetrics(jestResults) {
 }
 
 /**
- * Extrai métricas de coverage
- * @param {Object} coverage - Coverage do Jest
- * @returns {Object} Métricas de coverage
+ * Extracts coverage metrics
+ * @param {Object} coverage - Jest coverage
+ * @returns {Object} Coverage metrics
  */
 function extractCoverageMetrics(coverage) {
   if (!coverage || !coverage.total) {
@@ -197,9 +197,9 @@ function extractCoverageMetrics(coverage) {
 }
 
 /**
- * Extrai métricas de segurança
- * @param {Object} securityResults - Resultados de testes de segurança
- * @returns {Object} Métricas de segurança
+ * Extracts security metrics
+ * @param {Object} securityResults - Security test results
+ * @returns {Object} Security metrics
  */
 function extractSecurityMetrics(securityResults) {
   if (!securityResults) {
@@ -228,15 +228,15 @@ function extractSecurityMetrics(securityResults) {
 }
 
 // =============================================================================
-// FORMATAÇÃO PROMETHEUS
+// PROMETHEUS FORMATTING
 // =============================================================================
 
 /**
- * Gera métricas no formato Prometheus
- * @param {Object} jestMetrics - Métricas do Jest
- * @param {Object} coverageMetrics - Métricas de coverage
- * @param {Object} securityMetrics - Métricas de segurança
- * @returns {string} Texto no formato Prometheus
+ * Generates metrics in Prometheus format
+ * @param {Object} jestMetrics - Jest metrics
+ * @param {Object} coverageMetrics - Coverage metrics
+ * @param {Object} securityMetrics - Security metrics
+ * @returns {string} Text in Prometheus format
  */
 function formatPrometheusMetrics(jestMetrics, coverageMetrics, securityMetrics) {
   const labels = `branch="${config.branchName}",build="${config.buildNumber}"`;
@@ -329,17 +329,17 @@ function formatPrometheusMetrics(jestMetrics, coverageMetrics, securityMetrics) 
     `qa_security_tests_failed{${labels}} ${securityMetrics.testsFailed}`,
   ];
 
-  // Prometheus requer newline no final
+  // Prometheus requires newline at the end
   return lines.join('\n') + '\n';
 }
 
 // =============================================================================
-// ENVIO PARA PUSHGATEWAY
+// SEND TO PUSHGATEWAY
 // =============================================================================
 
 /**
- * Envia métricas para o Pushgateway via HTTP POST
- * @param {string} metrics - Métricas no formato Prometheus
+ * Sends metrics to Pushgateway via HTTP POST
+ * @param {string} metrics - Metrics in Prometheus format
  * @returns {Promise<void>}
  */
 function pushMetrics(metrics) {
@@ -364,16 +364,16 @@ function pushMetrics(metrics) {
       res.on('data', chunk => body += chunk);
       res.on('end', () => {
         if (res.statusCode >= 200 && res.statusCode < 300) {
-          console.log(`✅ Métricas enviadas com sucesso (status ${res.statusCode})`);
+          console.log(`✅ Metrics sent successfully (status ${res.statusCode})`);
           resolve();
         } else {
-          reject(new Error(`Pushgateway retornou status ${res.statusCode}: ${body}`));
+          reject(new Error(`Pushgateway returned status ${res.statusCode}: ${body}`));
         }
       });
     });
 
     req.on('error', (error) => {
-      reject(new Error(`Erro de conexão: ${error.message}`));
+      reject(new Error(`Connection error: ${error.message}`));
     });
 
     req.write(metrics);
@@ -382,7 +382,7 @@ function pushMetrics(metrics) {
 }
 
 // =============================================================================
-// NOTIFICAÇÃO OPCIONAL
+// OPTIONAL NOTIFICATION
 // =============================================================================
 
 function sendNotification(message) {
@@ -390,7 +390,7 @@ function sendNotification(message) {
     return Promise.resolve();
   }
 
-  // Discord webhooks aceitam payload simples com "content"
+  // Discord webhooks accept simple payload with "content"
   const payload = JSON.stringify({ content: message });
   const url = new URL(config.notifyWebhookUrl);
 
@@ -433,48 +433,48 @@ async function main() {
   console.log(`   Build: ${config.buildNumber}`);
   console.log('');
 
-  // 1. Ler arquivos
-  console.log('📖 Lendo arquivos de resultado...');
+  // 1. Read files
+  console.log('📖 Reading result files...');
   const jestResults = readJestResults();
   const coverage = readCoverage();
   const securityResults = readSecurityResults();
 
-  // 2. Extrair métricas
-  console.log('📈 Extraindo métricas...');
+  // 2. Extract metrics
+  console.log('📈 Extracting metrics...');
   const jestMetrics = extractJestMetrics(jestResults);
   const coverageMetrics = extractCoverageMetrics(coverage);
   const securityMetrics = extractSecurityMetrics(securityResults);
 
-  console.log(`   Testes: ${jestMetrics.passed}/${jestMetrics.total} (${jestMetrics.passRate.toFixed(1)}%)`);
-  console.log(`   Duração: ${jestMetrics.duration.toFixed(1)}s`);
-  console.log(`   Coverage: ${coverageMetrics.lines}% linhas`);
+  console.log(`   Tests: ${jestMetrics.passed}/${jestMetrics.total} (${jestMetrics.passRate.toFixed(1)}%)`);
+  console.log(`   Duration: ${jestMetrics.duration.toFixed(1)}s`);
+  console.log(`   Coverage: ${coverageMetrics.lines}% lines`);
   console.log(`   Security: ${securityMetrics.testsPassed}/${securityMetrics.totalTests} passed`);
   console.log('');
 
-  // 3. Formatar métricas
+  // 3. Format metrics
   const metrics = formatPrometheusMetrics(jestMetrics, coverageMetrics, securityMetrics);
 
-  // 4. Enviar para Pushgateway
-  console.log('📤 Enviando para Pushgateway...');
+  // 4. Send to Pushgateway
+  console.log('📤 Sending to Pushgateway...');
   try {
     await pushMetrics(metrics);
     console.log('');
-    console.log('✅ Publicação concluída com sucesso!');
+    console.log('✅ Publication completed successfully!');
 
     await sendNotification(
       `Metrics updated: branch=${config.branchName}, build=${config.buildNumber}, job=${config.jobName}`
     );
   } catch (error) {
-    console.error(`❌ Falha ao publicar: ${error.message}`);
+    console.error(`❌ Failed to publish: ${error.message}`);
 
-    // Não falhar o CI se o Pushgateway estiver offline
+    // Don't fail CI if Pushgateway is offline
     if (process.env.FAIL_ON_PUSH_ERROR === 'true') {
       process.exit(1);
     } else {
-      console.log('⚠️  Continuando sem falhar (FAIL_ON_PUSH_ERROR != true)');
+      console.log('⚠️  Continuing without failure (FAIL_ON_PUSH_ERROR != true)');
     }
   }
 }
 
-// Executar
+// Execute
 main().catch(console.error);

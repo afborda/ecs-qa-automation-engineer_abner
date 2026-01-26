@@ -1,32 +1,32 @@
-// Jest configuration dinâmica baseada no ambiente
+// Jest dynamic configuration based on environment
 
 module.exports = {
   // ============================================
-  // Performance & Paralelização
+  // Performance & Parallelization
   // ============================================
 
-  // Ambiente: Node.js (não browser)
+  // Environment: Node.js (not browser)
   testEnvironment: 'node',
 
   /**
-   * Workers = processos paralelos do Jest
-   * CI: 100% dos cores | Local: 75% (deixa margem)
+   * Workers = Jest parallel processes
+   * CI: 100% of cores | Local: 75% (leaves margin)
    */
   maxWorkers: process.env.CI ? '100%' : '75%',
 
   /**
-   * Concurrency = testes simultâneos POR worker
-   * Previne rate limiting e timeouts
+   * Concurrency = simultaneous tests PER worker
+   * Prevents rate limiting and timeouts
    */
   maxConcurrency: 10,
 
   // ============================================
-  // Cache & Otimização
+  // Cache & Optimization
   // ============================================
 
   /**
-   * Cache agressivo para re-runs
-   * Acelera re-runs em ~30-40%
+   * Aggressive cache for re-runs
+   * Speeds up re-runs by ~30-40%
    */
   cache: true,
   cacheDirectory: '.jest-cache',
@@ -36,40 +36,40 @@ module.exports = {
   // ============================================
 
   /**
-   * Timeout aumentado para 30s
-   * Cobre testes XSS com polling + retry logic
+   * Timeout increased to 30s
+   * Covers XSS tests with polling + retry logic
    */
   testTimeout: 30000,
 
-  // Padrão de pastas de teste
+  // Test folder patterns
   testMatch: [
     '**/__tests__/**/*.test.js',
     '**/__tests__/**/*.spec.js',
   ],
 
-  // Limpar mocks entre testes (previne mock leakage)
+  // Clear mocks between tests (prevents mock leakage)
   clearMocks: true,
 
-  // NÃO resetar mocks (preserva custom matchers)
+  // DO NOT reset mocks (preserves custom matchers)
   resetMocks: false,
 
-  // Restaurar implementação original após testes
+  // Restore original implementation after tests
   restoreMocks: true,
 
   // ============================================
-  // Debugging & Mefalse,  // Desabilitado por padrão (usar test:coverage)Leaks
+  // Debugging & Memory Leaks
   // ============================================
 
   /**
-   * Detectar handles abertos (ativar com DETECT_LEAKS=true)
-   * ⚠️ Muito lento, usar apenas para debug
+   * Detect open handles (enable with DETECT_LEAKS=true)
+   * ⚠️ Very slow, use only for debug
    */
   detectOpenHandles: process.env.DETECT_LEAKS === 'true',
   detectLeaks: process.env.DETECT_LEAKS === 'true',
 
   /**
-   * NUNCA forçar exit
-   * Leaks devem ser corrigidos, não mascarados
+   * NEVER force exit
+   * Leaks must be fixed, not masked
    */
   forceExit: false,
 
@@ -80,7 +80,7 @@ module.exports = {
   // Setup file
   setupFilesAfterEnv: ['<rootDir>/__tests__/setup.js'],
 
-  // Coverage (desabilitado por padrão - usar test:coverage)
+  // Coverage (disabled by default - use test:coverage)
   collectCoverage: false,
   collectCoverageFrom: [
     'index.js',
@@ -89,7 +89,7 @@ module.exports = {
   coverageReporters: ['text', 'html', 'lcov', 'json-summary'],
   coveragePathIgnorePatterns: ['/node_modules/', '/__tests__/', '/coverage/'],
 
-  // Thresholds (será mais flexível no começo)
+  // Thresholds (more flexible at the beginning)
   coverageThreshold: {
     global: {
       branches: 0,
@@ -103,14 +103,14 @@ module.exports = {
   // Reporters & Output
   // ============================================
 
-  // Verbose desabilitado (ativar com --verbose)
+  // Verbose disabled (enable with --verbose)
   verbose: false,
 
-  // Suprimir warnings em CI
+  // Suppress warnings in CI
   silent: process.env.CI === 'true',
 
   // ============================================
-  // Transform (nenhum necessário para Node.js 18+)
+  // Transform (none needed for Node.js 18+)
   // ============================================
 
   transform: {},

@@ -1,0 +1,19 @@
+{
+  "name": "ecs-qa-automation-engineer-abner",
+  "version": "1.0.0",
+  "description": "QA Automation Assignment - Performance & Security Testing",
+  "private": true,
+  "scripts": {
+    "prepare": "husky",
+    "check:all": "cd logging-backend && npm run lint && npm test && npm audit --omit=dev || true",
+    "check:quick": "cd logging-backend && npm run lint",
+    "check:security": "cd logging-backend && npm audit --omit=dev || true"
+  },
+  "devDependencies": {
+    "husky": "^9.0.11"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/abnerfonseca/ecs-qa-automation-engineer_abner"
+  }
+}

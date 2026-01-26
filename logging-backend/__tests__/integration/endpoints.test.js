@@ -175,7 +175,6 @@ describe('API Endpoints Integration Tests', () => {
         memoryUsageMB: expect.any(Number)
       });
 
-      // No extra properties
       expect(Object.keys(res.body)).toHaveLength(3);
     });
 

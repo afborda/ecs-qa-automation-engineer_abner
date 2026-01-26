@@ -1,0 +1,15 @@
+#!/bin/sh
+
+echo "🔒 Running pre-push security checks..."
+npm run check:security
+
+if [ $? -ne 0 ]; then
+  echo "⚠️  Security vulnerabilities found. Review before pushing."
+  echo "Continue anyway? (y/n)"
+  read -r response
+  if [ "$response" != "y" ]; then
+    exit 1
+  fi
+fi
+
+echo "✅ Security check complete. Pushing..."

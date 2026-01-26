@@ -1,15 +1,4 @@
-/**
- * Polling and Retry Helpers
- * Padrões reutilizáveis para polling assíncrono com retry inteligente
- * Usado por testes de integração e segurança
- */
 
-/**
- * Aguarda até que uma condição seja verdadeira
- * @param {Function} condition - Função que retorna Promise<boolean>
- * @param {Object} options - { maxAttempts: 20, delayMs: 100 }
- * @returns {Promise<boolean>}
- */
 const waitForCondition = async (
   condition,
   options = {}
@@ -31,12 +20,6 @@ const waitForCondition = async (
   );
 };
 
-/**
- * Executa função com retry e backoff exponencial
- * @param {Function} fn - Função assíncrona a executar
- * @param {Object} options - { maxAttempts: 20, initialDelayMs: 50 }
- * @returns {Promise<T>}
- */
 const pollWithBackoff = async (fn, options = {}) => {
   const { maxAttempts = 20, initialDelayMs = 50 } = options;
   let lastError;
@@ -48,7 +31,7 @@ const pollWithBackoff = async (fn, options = {}) => {
       lastError = error;
 
       if (i < maxAttempts - 1) {
-        // Backoff exponencial: 50ms, 75ms, 112ms, 168ms, etc
+        // Exponential backoff: 50ms, 75ms, 112ms, 168ms, etc
         const delay = initialDelayMs * Math.pow(1.5, i);
         await sleep(delay);
       }
@@ -61,12 +44,6 @@ const pollWithBackoff = async (fn, options = {}) => {
   );
 };
 
-/**
- * Aguarda com retry fixo (delay constante)
- * @param {Function} fn - Função assíncrona a executar
- * @param {Object} options - { maxAttempts: 20, delayMs: 500 }
- * @returns {Promise<T>}
- */
 const pollWithFixedDelay = async (fn, options = {}) => {
   const { maxAttempts = 20, delayMs = 500 } = options;
   let lastError;
@@ -88,9 +65,6 @@ const pollWithFixedDelay = async (fn, options = {}) => {
   );
 };
 
-/**
- * Helper para sleep (delay)
- */
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 module.exports = {

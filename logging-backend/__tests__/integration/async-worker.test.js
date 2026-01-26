@@ -1,11 +1,4 @@
-/**
- * Integration Tests: Async Worker
- *
- * ⚠️ ATENÇÃO: Import de setup-worker DEVE vir PRIMEIRO!
- * Este setup habilita o worker antes de index.js ser carregado.
- */
 
-// CRÍTICO: Importar setup PRIMEIRO
 require('./setup-worker');
 
 const {
@@ -19,10 +12,8 @@ const { pollWithFixedDelay } = require('../helpers/pollingHelpers');
 const { HTTP_STATUS, TIMEOUTS, PAYLOAD_SIZES } = require('../fixtures/testConstants');
 const { TEST_MESSAGES } = require('../fixtures/mockData');
 
-// Agora importar app com worker ativo
 const app = require('../../index');
 
-// Alguns cenários de worker podem ultrapassar 30s em ambientes mais lentos
 jest.setTimeout(TIMEOUTS.SLOW_TEST_TIMEOUT);
 
 describe('Async Worker - Log Processing', () => {
@@ -44,17 +35,14 @@ describe('Async Worker - Log Processing', () => {
 
       const correlationId = await createLog(MESSAGES.simple, TOKENS.valid);
 
-      // Use polling helper com retry inteligente
       const result = await pollWithFixedDelay(
         async () => {
           const res = await request(app).get(`/logs/${correlationId}`);
 
-          // Se não temos status, falha para tentar novamente
           if (!res.body.status) {
             throw new Error('No status in response');
           }
 
-          // Se ainda está QUEUED, falha para tentar novamente
           if (res.body.status === 'QUEUED') {
             throw new Error('Still QUEUED, retrying...');
           }
@@ -157,7 +145,6 @@ describe('Async Worker - Log Processing', () => {
     it('should update metrics when processing logs', async () => {
       jwt.verify.mockReturnValue({ user: 'qa' });
 
-      // Get initial metrics
       const initialRes = await request(app).get('/metrics');
       expect(initialRes.status).toBe(200);
       expect(initialRes.body).toHaveProperty('queued');
@@ -165,13 +152,11 @@ describe('Async Worker - Log Processing', () => {
 
       const initialProcessed = initialRes.body.processed || 0;
 
-      // Post a log
       const postRes = await request(app)
         .post('/logs')
         .set('Authorization', `Bearer ${TOKENS.valid}`)
         .send({ message: TEST_MESSAGES.logs.general });
 
-      // Skip if rate limited
       if (postRes.status === 429) {
         console.log('Rate limited - skipping metrics test');
         return;
@@ -179,20 +164,16 @@ describe('Async Worker - Log Processing', () => {
 
       expect(postRes.status).toBe(202);
 
-      // Wait for processing
       await new Promise(r => setTimeout(r, TIMEOUTS.POLLING_INTERVAL * 3));
 
-      // Get final metrics
       const finalRes = await request(app).get('/metrics');
       expect(finalRes.status).toBe(200);
       expect(finalRes.body).toHaveProperty('queued');
       expect(finalRes.body).toHaveProperty('processed');
 
-      // Processed count should have increased or queue should be manageable
       const finalProcessed = finalRes.body.processed || 0;
       const finalQueued = finalRes.body.queued || 0;
 
-      // Either processed increased OR queue diminuiu (sinal de trabalho do worker)
       expect(finalProcessed >= initialProcessed || finalQueued < initialRes.body.queued).toBe(true);
     });
   });

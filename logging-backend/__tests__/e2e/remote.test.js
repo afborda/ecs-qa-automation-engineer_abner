@@ -5,7 +5,7 @@ const { HTTP_STATUS, TIMEOUTS, PAYLOAD_SIZES, E2E } = require('../fixtures/testC
 const baseURL = process.env.API_BASE || 'https://abnerfonseca.com.br/api';
 const client = axios.create({ baseURL, timeout: TIMEOUTS.REQUEST_TIMEOUT, validateStatus: () => true });
 
-// Retry helper para lidar com 429 (rate limit) no ambiente remoto
+// Retry helper to handle 429 (rate limit) in remote environment
 const withRetry429 = (fn, options = {}) => {
   const { maxAttempts = 6, initialDelayMs = 150 } = options;
   return pollWithBackoff(async () => {

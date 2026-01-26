@@ -1,23 +1,8 @@
-/**
- * Phase 4: Security Testing - Authentication & JWT
- *
- * Testes de segurança para validar:
- * - Tokens JWT são validados corretamente
- * - Tokens expirados são rejeitados
- * - Tokens inválidos/alterados são rejeitados
- * - Requests sem autenticação são bloqueados
- * - Rate limiting funciona
- *
- * ⚠️ IMPORTANTE: Este arquivo usa funções do mockHelpers que geram
- * tokens REAIS (via jest.requireActual) para testar validação de autenticação.
- */
 
-// CRÍTICO: Unmock ANTES de qualquer require
 jest.unmock('jsonwebtoken');
 
 const app = require('../../index');
 
-// Importar helpers centralizados - seguindo padrão SOLID do projeto
 const {
   generateRealToken,
   generateShortLivedToken,
@@ -27,11 +12,9 @@ const {
   request,
 } = require('../helpers/mockHelpers');
 
-// Importar constantes e dados
 const { TEST_MESSAGES } = require('../fixtures/mockData');
 const { HTTP_STATUS, TIMEOUTS } = require('../fixtures/testConstants');
 
-// Dados de teste centralizados
 const malformedTokens = getMalformedTokens();
 
 describe('Security: Authentication & JWT Validation', () => {
@@ -88,7 +71,6 @@ describe('Security: Authentication & JWT Validation', () => {
     });
 
     it('should reject JWT with tampered payload', async () => {
-      // Gerar token válido e depois adulterar o payload
       const validToken = generateRealToken();
       const tamperedToken = tamperTokenPayload(validToken);
 
@@ -115,10 +97,8 @@ describe('Security: Authentication & JWT Validation', () => {
     });
 
     it('should reject expired token after waiting', async () => {
-      // Gerar token que expira em 1 segundo
       const shortLivedToken = generateShortLivedToken();
 
-      // Esperar token expirar (1s + margem)
       await new Promise(resolve => setTimeout(resolve, TIMEOUTS.JWT_EXPIRY_WAIT));
 
       const res = await request(app)
@@ -131,7 +111,6 @@ describe('Security: Authentication & JWT Validation', () => {
     }, TIMEOUTS.JWT_EXPIRY_TEST_TIMEOUT);
 
     it('should NOT leak expiration details in error message', async () => {
-      // Gerar token já expirado
       const expiredToken = generateExpiredToken();
 
       const res = await request(app)
@@ -139,7 +118,6 @@ describe('Security: Authentication & JWT Validation', () => {
         .set('Authorization', `Bearer ${expiredToken}`)
         .send({ message: TEST_MESSAGES.auth.invalidToken });
 
-      // Erro não deve conter timestamp exato ou detalhes do token
       const errorStr = JSON.stringify(res.body);
       expect(errorStr).not.toMatch(/\d{10}/); // Unix timestamp
       expect(errorStr).not.toMatch(/"exp"/);  // exp claim
@@ -149,7 +127,6 @@ describe('Security: Authentication & JWT Validation', () => {
 
   describe('Public Endpoints (No Auth Required)', () => {
     it('should allow GET /logs/:id without authentication', async () => {
-      // Criar um log com auth válida
       const token = generateRealToken();
       const postRes = await request(app)
         .post('/logs')
@@ -158,7 +135,6 @@ describe('Security: Authentication & JWT Validation', () => {
 
       const correlationId = postRes.body.correlationId;
 
-      // GET não requer auth
       const getRes = await request(app).get(`/logs/${correlationId}`);
       expect(getRes.status).toBe(HTTP_STATUS.OK);
     });
@@ -171,7 +147,6 @@ describe('Security: Authentication & JWT Validation', () => {
     });
 
     it('should allow POST /auth/token without authentication', async () => {
-      // Este endpoint gera tokens - não requer auth prévia
       const res = await request(app).post('/auth/token');
       expect(res.status).toBe(HTTP_STATUS.OK);
     });
@@ -179,7 +154,6 @@ describe('Security: Authentication & JWT Validation', () => {
 });
 
 describe('Security: Rate Limiting', () => {
-  // Nota: RATE_LIMIT=500 em testes para evitar bloqueios
 
   it('should have rate limiting configured', async () => {
     const res = await request(app).get('/metrics');
@@ -194,23 +168,18 @@ describe('Security: Rate Limiting', () => {
       .set('Authorization', `Bearer ${token}`)
       .send({ message: TEST_MESSAGES.logs.general });
 
-    // Express-rate-limit tipicamente adiciona headers
     expect([HTTP_STATUS.OK, HTTP_STATUS.ACCEPTED]).toContain(res.status);
     expect(res.headers['x-ratelimit-limit']).toBeDefined();
     expect(res.headers['x-ratelimit-remaining']).toBeDefined();
   });
 
-  // NOTA: Teste completo de rate limit (100+ requests) seria lento
-  // Em CI usamos RATE_LIMIT=500 para não bloquear
 });
 
 describe('Security: Rate Limit Bypass Prevention', () => {
-  // Testes para validar que rate limit não pode ser bypassado com técnicas comuns
 
   it('should not bypass rate limit with different User-Agent headers', async () => {
     let requestCount = 0;
 
-    // Fazer múltiplas requests com User-Agents diferentes
     for (let i = 0; i < 5; i++) {
       const res = await request(app)
         .get('/metrics')
@@ -222,26 +191,21 @@ describe('Security: Rate Limit Bypass Prevention', () => {
       }
     }
 
-    // Esperado: requests são contadas por IP, não por User-Agent
     expect(requestCount).toBeGreaterThan(0);
   });
 
   it('should not bypass rate limit with X-Forwarded-For spoofing', async () => {
 
-    // Múltiplas requests do mesmo IP com X-Forwarded-For falso
     for (let i = 0; i < 3; i++) {
       const res = await request(app)
         .get('/metrics')
-        .set('X-Forwarded-For', `192.168.1.${i}`); // IP falso
+        .set('X-Forwarded-For', `192.168.1.${i}`); // Fake IP
 
-      // Não deve bloquear se o servidor confiar em X-Forwarded-For
-      // ou bloqueia se não confiar (ambos são seguros)
       expect([HTTP_STATUS.OK, HTTP_STATUS.TOO_MANY_REQUESTS]).toContain(res.status);
     }
   });
 
   it('rate limit errors should not leak sensitive information', async () => {
-    // Se rate limit ocorrer, validar que erro não expõe internals
     const res = await request(app).get('/metrics');
 
     if (res.status === HTTP_STATUS.TOO_MANY_REQUESTS) {
@@ -272,7 +236,6 @@ describe('Security: CORS Validation', () => {
       .set('Access-Control-Request-Method', 'POST')
       .set('Access-Control-Request-Headers', 'Content-Type, Authorization');
 
-    // Esperado: 200 ou 204 para preflight
     expect([HTTP_STATUS.OK, 204]).toContain(res.status);
   });
 
@@ -286,7 +249,6 @@ describe('Security: CORS Validation', () => {
       .send({ message: TEST_MESSAGES.logs.general });
 
     expect(res.status).toBe(HTTP_STATUS.ACCEPTED);
-    // Note: CORS headers behavior depende da configuração do Express
   });
 
   it('should handle CORS for metrics endpoint (public)', async () => {
@@ -294,7 +256,6 @@ describe('Security: CORS Validation', () => {
       .get('/metrics')
       .set('Origin', 'https://example.com');
 
-    // Metrics é público, deve aceitar qualquer Origin
     expect(res.status).toBe(HTTP_STATUS.OK);
   });
 });

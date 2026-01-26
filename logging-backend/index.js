@@ -45,7 +45,7 @@ function auth(req, res, next) {
   }
 }
 
-// Desabilitar worker em testes para evitar memory leaks
+// Disable worker in tests to avoid memory leaks
 if (process.env.DISABLE_WORKER !== 'true') {
 // Async worker
 setInterval(() => {
@@ -111,10 +111,10 @@ app.post('/auth/token', (req, res) => {
   res.json({ token });
 });
 
-// Exportar app para testes
+// Export app for tests
 module.exports = app;
 
-// Só inicia servidor se não for em modo de teste
+// Only start server if not in test mode
 if (require.main === module) {
   app.listen(3000, () => {
     console.log('Sample logging backend running on port 3000');

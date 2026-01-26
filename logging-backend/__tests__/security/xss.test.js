@@ -1,17 +1,4 @@
-/**
- * Phase 4: Security Testing - XSS Input Validation
- *
- * Tests validate that the API safely handles XSS payloads without:
- * - Executing malicious code
- * - Reflecting unencoded input
- * - Crashing on edge cases
- *
- * ⚠️ ATENÇÃO: Importar setup-worker PRIMEIRO para habilitar o worker!
- * Alguns testes (Payload Size, Response Validation) precisam que logs
- * sejam processados para validar comportamento.
- */
 
-// CRÍTICO: Importar setup PRIMEIRO
 require('./setup-worker');
 
 const app = require('../../index');
@@ -35,12 +22,10 @@ describe('Security: XSS-like Input Validation', () => {
       expect(res.status).toBe(HTTP_STATUS.ACCEPTED);
       expect(res.body).toHaveProperty('correlationId');
 
-      // Validar que o log foi aceito sem executar
       const correlationId = res.body.correlationId;
       const pollRes = await request(app).get(`/logs/${correlationId}`);
       expect(['QUEUED', 'PROCESSED', 'FAILED']).toContain(pollRes.body.status);
 
-      // Quando processado, a mensagem armazenada deve ser igual ao payload (não alterada)
       if (pollRes.body.status === 'PROCESSED') {
         expect(pollRes.body.message).toBe(payload.message);
       }
@@ -325,7 +310,6 @@ describe('Security: XSS-like Input Validation', () => {
 
       expect(res.status).toBe(PAYLOAD_SIZE_TESTS.justOverLimit.expectedStatus);
 
-      // Worker processa 1 log/segundo - usar delays maiores
       const result = await pollWithBackoff(
         async () => {
           const pollRes = await request(app).get(`/logs/${res.body.correlationId}`);
@@ -335,7 +319,6 @@ describe('Security: XSS-like Input Validation', () => {
         { maxAttempts: 15, initialDelayMs: 500 }
       );
       expect(result.status).toBe('FAILED');
-      // Pode falhar por tamanho ou por razão aleatória
       expect(['Payload too large', 'Random processing failure']).toContain(result.reason);
     }, 25000);
 
@@ -387,7 +370,6 @@ describe('Security: XSS-like Input Validation', () => {
         expect(result.reason).toBe('Random processing failure');
       }
 
-      // Security validation: oversized payloads should fail, not execute
       expect(payloadSizeError).toBeTruthy();
       expect(payloadSizeError.reason).toBe('Payload too large');
     }, 18000);
@@ -420,7 +402,7 @@ describe('Security: XSS-like Input Validation', () => {
       expect(postRes.status).toBe(HTTP_STATUS.ACCEPTED);
       const correlationId = postRes.body.correlationId;
 
-      // Polling otimizado com backoff
+      // Optimized polling with backoff
       await pollWithBackoff(
         async () => {
           const pollRes = await request(app).get(`/logs/${correlationId}`);
@@ -432,14 +414,11 @@ describe('Security: XSS-like Input Validation', () => {
 
       const getRes = await request(app).get(`/logs/${correlationId}`);
 
-      // Verificar que a resposta é JSON válido
       expect(getRes.status).toBe(HTTP_STATUS.OK);
       expect(getRes.headers['content-type']).toMatch(/json/);
 
-      // Se processado, message deve estar presente (não deve executar)
       if (getRes.body.status === 'PROCESSED') {
         expect(getRes.body.message).toBe(payload.message);
-        // Validar que JSON está properly encoded
         expect(typeof getRes.body.message).toBe('string');
       }
     });
@@ -453,14 +432,11 @@ describe('Security: XSS-like Input Validation', () => {
         .set('Authorization', `Bearer ${token}`)
         .send(xssPayload);
 
-      // Validar que resposta é JSON
       const responseText = JSON.stringify(res.body);
       expect(responseText).toBeDefined();
 
-      // Se houver erro em response.body, deve estar encoded
       if (res.body.error) {
         expect(typeof res.body.error).toBe('string');
-        // Error message não deve conter script tags sem escape
         expect(res.body.error).not.toMatch(/<script>/);
       }
     });
@@ -476,11 +452,8 @@ describe('Security: XSS-like Input Validation', () => {
         .set('Authorization', `Bearer ${token}`)
         .send(payload);
 
-      // Validar headers de segurança
       expect(res.status).toBe(HTTP_STATUS.ACCEPTED);
       expect(res.headers['content-type']).toMatch(/json/);
-      // X-Content-Type-Options: nosniff previne MIME sniffing
-      // Note: Backend pode não implementar, então just document
     });
 
     it('should not allow content injection through correlationId', async () => {
@@ -495,7 +468,6 @@ describe('Security: XSS-like Input Validation', () => {
       expect(res.status).toBe(HTTP_STATUS.ACCEPTED);
       expect(res.body).toHaveProperty('correlationId');
 
-      // correlationId deve ser UUID format, não arbitrary text
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       expect(res.body.correlationId).toMatch(uuidRegex);
     });
